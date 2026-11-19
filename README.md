@@ -3,9 +3,6 @@
 
 A responsive, high-performance web portal built for **Anupama Agencies** to manage godown workers, bulk daily attendance, staff advance khata, vehicle fleet fuel expenses, beat dispatches, damaged product claims, and monthly wage payouts.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start)
-[![GitHub Repository](https://img.shields.io/badge/GitHub-aaryank3007--svg%2Fanupama--agencies-blue?logo=github)](https://github.com/aaryank3007-svg/anupama-agencies)
-
 ---
 
 ## 🔍 Why Worker Profile Edits Were Resetting & The Permanent Fix
