@@ -21,27 +21,7 @@ This updated version implements **permanent client-side state persistence** with
 
 ---
 
-## ⚡ How to Deploy on Netlify (100% Free & Zero Errors)
 
-Netlify provides free hosting, instant global CDN delivery, automatic HTTPS SSL certificates, and **never sleeps or shuts down** (unlike Render's free tier).
-
-### Method 1: Netlify Drop (Easiest — Takes 10 Seconds)
-1. Open your browser and go to: **[https://app.netlify.com/drop](https://app.netlify.com/drop)** (log in or sign up for free).
-2. Drag and drop this entire project folder (`python project for anupama agenices`) into the browser window.
-3. Netlify will immediately publish your website and give you a live link (e.g., `https://anupama-agencies.netlify.app`).
-4. That's it! Your website is live 24/7 with zero configuration.
-
-### Method 2: Connect GitHub Repository to Netlify (Automatic Continuous Deployment)
-1. Log in to **[Netlify](https://app.netlify.com)**.
-2. Click **"Add new site"** $\rightarrow$ **"Import an existing project"**.
-3. Select **GitHub** and grant access to your repository: `aaryank3007-svg/anupama-agencies`.
-4. Netlify will automatically detect the pre-configured [netlify.toml](netlify.toml) settings:
-   - **Publish directory:** `.` (root directory)
-   - **Build command:** *(leave blank)*
-5. Click **"Deploy anupama-agencies"**.
-6. Every time you push a commit to the `main` branch, Netlify will automatically update your live website.
-
----
 
 ## 💻 Running Locally on Your Computer
 
