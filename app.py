@@ -1,8 +1,8 @@
 """
 Anupama Agencies — FMCG Distributor Management Portal 
-Flask Application Core Routes & Web Server Handlers
+Flask Application Core Routes & Web Server Handlers 
 
-Authorized Wholesale Regional Distributor for:
+Authorized Wholesale Regional Distributor for: 
 - Everest Spices (Direct Crate Beats) 
 - Colgate-Palmolive (Oral Care & Personal Hygiene Cartons)
 
@@ -10,15 +10,15 @@ This module provides web routes, REST API endpoints, CSV reports, Jinja template
 rendering, and state orchestration for all FMCG distribution godown operations. 
 """
 
-import os 
+import os  
 from datetime import datetime, date, timedelta
 from calendar import monthrange
 from typing import Any, Dict, List, Optional, Union
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
-from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement 
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory 
+from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement  
 from database import init_db
 from utils import (
-    format_inr, save_uploaded_file, export_csv_response,
+    format_inr, save_uploaded_file, export_csv_response, 
     FEFOEngine, AttendanceEngine, KhataEngine, PayrollEngine, 
     FleetAnalyticsEngine, DispatchEngine, DamageClaimsEngine, 
     BackupEngine, FMCG_CATALOG
@@ -28,30 +28,30 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'anupama-agencies-fmcg-distributor-secret-2026')
 app.config['PORTAL_VERSION'] = '2.1.0'
 
-db_url = os.environ.get('DATABASE_URL', 'sqlite:///anupama_agencies.db')
-if db_url.startswith('postgres://'):
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///anupama_agencies.db') 
+if db_url.startswith('postgres://'): 
     db_url = db_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url 
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url  
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 
 # Register Jinja context filters and functions
 @app.template_filter('inr')
 def inr_filter(value: Any) -> str:
-    """Jinja template filter to format numerical values into Indian Rupee strings.
-
+    """Jinja template filter to format numerical values into Indian Rupee strings. 
+ 
     Args:
         value: Numeric value (float, int, or numeric string). 
 
     Returns:
         str: Formatted currency string with ₹ symbol and Indian numbering format. 
     """
-    return format_inr(value)
+    return format_inr(value) 
 
 @app.context_processor
 def inject_global_vars() -> Dict[str, Any]:
-    """Injects global date and time context variables into all Jinja templates.
-
+    """Injects global date and time context variables into all Jinja templates. 
+ 
     Returns:
         Dict[str, Any]: Dictionary containing today, current_year, current_month, and now.
     """ 
