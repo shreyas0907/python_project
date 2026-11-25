@@ -1,26 +1,26 @@
 """
-Anupama Agencies — FMCG Distributor Management Portal
+Anupama Agencies — FMCG Distributor Management Portal 
 Flask Application Core Routes & Web Server Handlers
 
 Authorized Wholesale Regional Distributor for:
-- Everest Spices (Direct Crate Beats)
+- Everest Spices (Direct Crate Beats) 
 - Colgate-Palmolive (Oral Care & Personal Hygiene Cartons)
 
 This module provides web routes, REST API endpoints, CSV reports, Jinja template
-rendering, and state orchestration for all FMCG distribution godown operations.
+rendering, and state orchestration for all FMCG distribution godown operations. 
 """
 
-import os
+import os 
 from datetime import datetime, date, timedelta
 from calendar import monthrange
 from typing import Any, Dict, List, Optional, Union
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
-from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement
+from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement 
 from database import init_db
 from utils import (
     format_inr, save_uploaded_file, export_csv_response,
-    FEFOEngine, AttendanceEngine, KhataEngine, PayrollEngine,
-    FleetAnalyticsEngine, DispatchEngine, DamageClaimsEngine,
+    FEFOEngine, AttendanceEngine, KhataEngine, PayrollEngine, 
+    FleetAnalyticsEngine, DispatchEngine, DamageClaimsEngine, 
     BackupEngine, FMCG_CATALOG
 )
 
@@ -31,7 +31,7 @@ app.config['PORTAL_VERSION'] = '2.1.0'
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///anupama_agencies.db')
 if db_url.startswith('postgres://'):
     db_url = db_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 
@@ -41,10 +41,10 @@ def inr_filter(value: Any) -> str:
     """Jinja template filter to format numerical values into Indian Rupee strings.
 
     Args:
-        value: Numeric value (float, int, or numeric string).
+        value: Numeric value (float, int, or numeric string). 
 
     Returns:
-        str: Formatted currency string with ₹ symbol and Indian numbering format.
+        str: Formatted currency string with ₹ symbol and Indian numbering format. 
     """
     return format_inr(value)
 
@@ -54,11 +54,11 @@ def inject_global_vars() -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Dictionary containing today, current_year, current_month, and now.
-    """
+    """ 
     today = date.today()
     return {
-        'today': today,
-        'current_year': today.year,
+        'today': today, 
+        'current_year': today.year, 
         'current_month': today.month,
         'now': datetime.now()
     }
@@ -68,14 +68,14 @@ db.init_app(app)
 init_db(app)
 
 # -------------------------------------------------------------------
-# 1. DASHBOARD
+# 1. DASHBOARD 
 # -------------------------------------------------------------------
 @app.route('/')
 def dashboard():
-    """Renders the soft-minimalist executive dashboard or serves standalone SPA.
+    """Renders the soft-minimalist executive dashboard or serves standalone SPA. 
 
-    Aggregates active workers, today's attendance muster, unrecovered khata advances,
-    current vs previous month fuel expenditure, active beat dispatches, and pending
+    Aggregates active workers, today's attendance muster, unrecovered khata advances, 
+    current vs previous month fuel expenditure, active beat dispatches, and pending 
     damaged/expiry credit note claims.
 
     Returns:
@@ -87,8 +87,8 @@ def dashboard():
     today = date.today()
     
     # Active workers
-    active_workers = Worker.query.filter_by(status='Active').all()
-    total_workers_count = len(active_workers)
+    active_workers = Worker.query.filter_by(status='Active').all() 
+    total_workers_count = len(active_workers) 
     
     # Today's attendance
     today_attendances = Attendance.query.filter_by(date=today).all()
