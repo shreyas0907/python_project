@@ -1,18 +1,18 @@
-# GitHub Linguist language overrides
-# Vendored client-side distribution bundles and standalone SPA builds
-/app.js linguist-vendored
-/static/js/** linguist-vendored
-/netlify-deploy/** linguist-vendored
+# Force test suite to be counted in language statistics
+tests/** linguist-detectable=true
+tests/** linguist-documentation=false
 
-# Root standalone SPA deployment build
-/index.html linguist-vendored
+# Vendor client-side JavaScript bundles and standalone SPA builds
+*.js linguist-vendored
+index.html linguist-vendored
+netlify-deploy/** linguist-vendored
 
-# Large presentation templates
-/templates/dashboard.html linguist-vendored
-/templates/returns/index.html linguist-vendored
-/templates/workers/view.html linguist-vendored
-/templates/fuel/index.html linguist-vendored
-/templates/base.html linguist-vendored
-/templates/advances/index.html linguist-vendored
-/templates/dispatches/index.html linguist-vendored
-/templates/settlements/index.html linguist-vendored
+# Vendor selected presentation templates
+templates/dashboard.html linguist-vendored
+templates/returns/index.html linguist-vendored
+templates/workers/view.html linguist-vendored
+templates/fuel/index.html linguist-vendored
+templates/base.html linguist-vendored
+templates/advances/index.html linguist-vendored
+templates/dispatches/index.html linguist-vendored
+templates/settlements/index.html linguist-vendored
