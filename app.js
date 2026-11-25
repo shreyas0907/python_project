@@ -47,12 +47,12 @@ function getInitialStockBatchesSeed() {
         {
             id: 3,
             brand: "Everest Spices",
-            product: "Everest Kashmiri Mirch Powder 100g",
+            product: "Everest Kashmiri Mirch Powder 100g", 
             batch: "EV-KM-2608C",
             mfg: makeDate(-30),
             exp: makeDate(120),
             qty: 32,
-            notes: "Festival stock reserve"
+            notes: "Festival stock reserve" 
         },
         {
             id: 4,
@@ -69,7 +69,7 @@ function getInitialStockBatchesSeed() {
             brand: "Colgate-Palmolive",
             product: "Colgate Vedshakti Herbal 100g",
             batch: "CP-VS-2604Y",
-            mfg: makeDate(-170),
+            mfg: makeDate(-170), 
             exp: makeDate(14),
             qty: 12,
             notes: "FEFO Alert: High priority dispatch"
@@ -96,7 +96,7 @@ function normalizeAppData(data) {
         return [];
     };
     return {
-        version: data.version || 1,
+        version: data.version || 1, 
         lastUpdated: data.lastUpdated || Date.now(),
         workers: toArr(data.workers),
         vehicles: toArr(data.vehicles),
@@ -154,7 +154,7 @@ const StorageManager = {
         const initial = this.getInitialSeedData();
         this.save(initial);
         return initial;
-    },
+    }, 
 
     getInitialSeedData() {
         const today = new Date();
@@ -167,7 +167,7 @@ const StorageManager = {
                 id: 1,
                 name: "Ramesh Kumar",
                 phone: "9823145670",
-                emergency_contact: "9823145671",
+                emergency_contact: "",
                 role: "Senior Delivery Van Driver",
                 daily_wage: 700.0,
                 monthly_salary: 18200.0,
@@ -179,7 +179,7 @@ const StorageManager = {
                 id: 2,
                 name: "Suresh Yadav",
                 phone: "9834123450",
-                emergency_contact: "9834123451",
+                emergency_contact: "",
                 role: "Godown Loader & Dispatcher",
                 daily_wage: 550.0,
                 monthly_salary: 14300.0,
@@ -191,7 +191,7 @@ const StorageManager = {
                 id: 3,
                 name: "Amit Sharma",
                 phone: "9765432100",
-                emergency_contact: "9765432101",
+                emergency_contact: "",
                 role: "Beat Delivery Van Driver",
                 daily_wage: 650.0,
                 monthly_salary: 16900.0,
@@ -203,7 +203,7 @@ const StorageManager = {
                 id: 4,
                 name: "Manoj Verma",
                 phone: "9922334455",
-                emergency_contact: "9922334456",
+                emergency_contact: "",
                 role: "Godown Helper & Stock Stacker",
                 daily_wage: 500.0,
                 monthly_salary: 13000.0,
@@ -215,7 +215,7 @@ const StorageManager = {
                 id: 5,
                 name: "Rajesh Patel",
                 phone: "9811223344",
-                emergency_contact: "9811223345",
+                emergency_contact: "",
                 role: "Warehouse Supervisor",
                 daily_wage: 800.0,
                 monthly_salary: 20800.0,
@@ -229,7 +229,7 @@ const StorageManager = {
         const vehicles = [
             {
                 id: 1,
-                vehicle_number: "MH-14-GH-4921",
+                vehicle_number: "MH-12-GH-4921",
                 vehicle_name: "Tata Ace Gold (Everest Spices Van)",
                 vehicle_type: "Delivery Van",
                 fuel_type: "Diesel",
@@ -238,7 +238,7 @@ const StorageManager = {
             },
             {
                 id: 2,
-                vehicle_number: "MH-14-DT-1108",
+                vehicle_number: "MH-12-DT-1108",
                 vehicle_name: "Mahindra Bolero Maxi Truck (Colgate Van)",
                 vehicle_type: "Mini Truck",
                 fuel_type: "Diesel",
@@ -247,7 +247,7 @@ const StorageManager = {
             },
             {
                 id: 3,
-                vehicle_number: "MH-14-AB-7732",
+                vehicle_number: "MH-12-AB-7732",
                 vehicle_name: "Piaggio Ape Auto (Wholesale City Beat)",
                 vehicle_type: "Auto Rickshaw",
                 fuel_type: "CNG",
