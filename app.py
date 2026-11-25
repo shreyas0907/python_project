@@ -26,6 +26,7 @@ from utils import (
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'anupama-agencies-fmcg-distributor-secret-2026')
+app.config['PORTAL_VERSION'] = '2.1.0'
 
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///anupama_agencies.db')
 if db_url.startswith('postgres://'):
