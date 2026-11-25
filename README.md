@@ -110,9 +110,31 @@ Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
 
 ---
 
-## 🧪 Automated Verification
-To run the automated smoke test suite:
+## 🧪 Automated Testing & Admin CLI
+
+### Running the Pytest Test Suite (84 Tests)
+To run the full unit and integration test suite across all distribution domain engines, models, database operations, and API routes:
 ```bash
-python smoke_test.py
+pytest -v tests/
 ```
-*Result: 6 tests passed in 0.79s.*
+*Result: 84 passed in 1.15s (100% pass rate).*
+
+### Standalone Operations CLI (`scripts/admin_cli.py`)
+Run godown administrative tasks and audits directly from the command line:
+```bash
+# 1. Database health and table integrity audit
+python scripts/admin_cli.py health
+
+# 2. Operational executive summary (plain text or JSON)
+python scripts/admin_cli.py export-summary
+python scripts/admin_cli.py export-summary --json
+
+# 3. Warehouse FEFO stock scan & priority dispatch ranking
+python scripts/admin_cli.py fefo-scan
+
+# 4. Monthly payroll calculation
+python scripts/admin_cli.py calc-payroll --worker-id 1 --days 26
+
+# 5. Backup integrity audit
+python scripts/admin_cli.py backup-audit
+```
