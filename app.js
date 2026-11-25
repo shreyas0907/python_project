@@ -269,7 +269,7 @@ const StorageManager = {
             for (let d = 1; d <= daysInM; d++) {
                 if (new Date(curYear, m - 1, d).getDay() !== 0) workingDays.push(d);
             }
-
+//Absence in working days
             workers.forEach(w => {
                 // Exactly 2 random absences per month per worker on working days
                 const shuffled = [...workingDays].sort(() => 0.5 - Math.random());
