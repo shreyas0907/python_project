@@ -1,5 +1,5 @@
 # Anupama Agencies — FMCG Distribution Management Portal
-### Authorized Distributor for Everest Spices & Colgate-Palmolive India Ltd.
+### Authorized Distributor for Everest Spices & Colgate-Palmolive India Ltd. 
 
 A responsive, high-performance web portal built for **Anupama Agencies** to manage godown workers, bulk daily attendance, staff advance khata, vehicle fleet fuel expenses, beat dispatches, damaged product claims, and monthly wage payouts.
 
@@ -8,7 +8,7 @@ A responsive, high-performance web portal built for **Anupama Agencies** to mana
 
 ---
 
-## 🔍 Why Worker Profile Edits Were Resetting & The Permanent Fix
+##  Why Worker Profile Edits Were Resetting & The Permanent Fix
 
 ### 1. The Root Cause (Previous Ephemeral Cloud Host)
 On free cloud platforms like Render Free Tier, containers automatically spin down into a sleep state after 15 minutes of inactivity. When a new visitor opens the website after a few hours, the platform boots up a brand-new container from the base Git repository image. Because free tiers use **ephemeral (temporary) disks**, the local database file was wiped out, causing the system to re-seed initial default sample names.
@@ -24,7 +24,7 @@ This updated version implements **permanent client-side state persistence** with
 
 ---
 
-## ⚡ How to Deploy on Netlify (100% Free & Zero Errors)
+##  How to Deploy on Netlify (100% Free & Zero Errors)
 
 Netlify provides free hosting, instant global CDN delivery, automatic HTTPS SSL certificates, and **never sleeps or shuts down** (unlike Render's free tier).
 
@@ -46,7 +46,7 @@ Netlify provides free hosting, instant global CDN delivery, automatic HTTPS SSL 
 
 ---
 
-## 💻 Running Locally on Your Computer
+##  Running Locally on Your Computer
 
 ### Option A: Open Directly in Any Browser
 Double-click `index.html` in your file explorer or open it in Google Chrome, Microsoft Edge, or Firefox. All features work immediately with zero server setup required!
@@ -63,7 +63,7 @@ Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
 
 ---
 
-## 📦 Core Modules & Capabilities
+##  Core Modules & Capabilities
 
 ### 1. Godown Staff Management & Worker Profiles
 - Full staff directory (Loaders, Delivery Drivers, Godown Helpers, Warehouse Supervisors).
@@ -110,7 +110,7 @@ Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
 
 ---
 
-## 🧪 Automated Testing & Admin CLI
+##  Automated Testing & Admin CLI
 
 ### Running the Pytest Test Suite (84 Tests)
 To run the full unit and integration test suite across all distribution domain engines, models, database operations, and API routes:
