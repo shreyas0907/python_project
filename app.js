@@ -6313,7 +6313,7 @@ function restoreBackupFromFile() {
                         notes: String(r['Notes'] || r.notes || '').trim()
                     }));
             }
-
+#contributors are aaryan shriya sachi 
             // Parse Stock QR Batches
             const batchesRows = getSheetRows(['Stock_QR_Batches', 'StockQRBatches', 'StockBatches', 'Batches']);
             if (batchesRows.length > 0) {
