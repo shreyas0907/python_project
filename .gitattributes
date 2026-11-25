@@ -1,11 +1,14 @@
-# Force test suite to be counted in language statistics
+# Force test suite and admin scripts to be counted in language statistics
 tests/** linguist-detectable=true
 tests/** linguist-documentation=false
+scripts/** linguist-detectable=true
 
 # Vendor client-side JavaScript bundles and standalone SPA builds
 *.js linguist-vendored
+**/*.js linguist-vendored
 index.html linguist-vendored
 netlify-deploy/** linguist-vendored
+static/js/** linguist-vendored
 
 # Vendor selected presentation templates
 templates/dashboard.html linguist-vendored

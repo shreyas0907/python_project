@@ -5,17 +5,21 @@ Central Business Logic & Data Processing Engine
 This module encapsulates all core distribution domain calculations, FEFO prioritization,
 attendance muster aggregations, advance khata reconciliations, wage settlements,
 fleet fuel analytics, dispatch safety validations, and damage return valuations.
+
+Author: Anupama Agencies Engineering Team
+Distribution Scope: Everest Spices & Colgate-Palmolive (Authorized Regional Depot)
 """
 
 from datetime import datetime, date, timedelta
 from calendar import monthrange
+from typing import Dict, List, Optional, Union, Any, Tuple
 import json
 import re
 
 # -------------------------------------------------------------------
 # FMCG PRODUCT CATALOG (Everest Spices & Colgate-Palmolive)
 # -------------------------------------------------------------------
-FMCG_CATALOG = {
+FMCG_CATALOG: Dict[str, List[str]] = {
     'Everest Spices': [
         'Everest Garam Masala 100g',
         'Everest Kashmiri Mirch Powder 100g',
@@ -43,10 +47,19 @@ FMCG_CATALOG = {
 }
 
 
-def get_val(obj, key, default=None):
-    """
-    Safely retrieves a key from a dictionary or an attribute from an object.
-    Avoids returning the default when obj is a dict that contains the key.
+def get_val(obj: Any, key: str, default: Any = None) -> Any:
+    """Safely retrieves a dictionary key or an object attribute with fallback.
+
+    Avoids returning the default when obj is a dict that explicitly contains
+    the key with a falsy but non-None value.
+
+    Args:
+        obj: A dictionary or class instance (e.g., SQLAlchemy model instance).
+        key: The attribute or dictionary key name to retrieve.
+        default: Fallback value if the key or attribute does not exist or is None.
+
+    Returns:
+        Any: The resolved value from obj or the specified default fallback.
     """
     if isinstance(obj, dict):
         val = obj.get(key)
@@ -55,16 +68,25 @@ def get_val(obj, key, default=None):
     return val if val is not None else default
 
 
-def parse_date(date_val):
-    """
-    Parses a date input which can be a date object, datetime object, or YYYY-MM-DD string.
+def parse_date(date_val: Union[datetime, date, str]) -> date:
+    """Parses a date input from datetime, date, or formatted date string.
+
+    Supports standard ISO 'YYYY-MM-DD', 'DD/MM/YYYY', 'DD-MM-YYYY', and 'YYYY/MM/DD'.
+
+    Args:
+        date_val: Date representation as date object, datetime instance, or string.
+
+    Returns:
+        date: Standardized Python datetime.date instance.
+
+    Raises:
+        ValueError: If date_val is None or cannot be parsed into any recognized format.
     """
     if isinstance(date_val, datetime):
         return date_val.date()
     if isinstance(date_val, date):
         return date_val
     if isinstance(date_val, str):
-        # Support YYYY-MM-DD or DD/MM/YYYY
         clean_str = date_val.strip()
         for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d'):
             try:
@@ -78,17 +100,35 @@ def parse_date(date_val):
 # 1. FEFO (FIRST-EXPIRY-FIRST-OUT) & STOCK BATCH ENGINE
 # -------------------------------------------------------------------
 class FEFOEngine:
+    """Warehouse First-Expiry-First-Out prioritization and crate verification engine.
+
+    Handles shelf-life percentage calculations, expiration warning thresholds,
+    crate barcode/QR encoding, and dispatch eligibility rules.
     """
-    Handles warehouse First-Expiry-First-Out prioritization, shelf-life
-    percentage computations, status classification, and crate QR verification.
-    """
-    EXPIRY_NEAR_DAYS_THRESHOLD = 60
+    EXPIRY_NEAR_DAYS_THRESHOLD: int = 60
 
     @classmethod
-    def calculate_expiry_info(cls, exp_date_val, mfg_date_val=None, ref_date=None):
-        """
-        Determines remaining days, FEFO status, shelf-life percentage, and human description.
-        Status: 'expired' (<= 0 days), 'near_expiry' (1-60 days), 'safe' (> 60 days).
+    def calculate_expiry_info(
+        cls,
+        exp_date_val: Union[date, str, datetime],
+        mfg_date_val: Optional[Union[date, str, datetime]] = None,
+        ref_date: Optional[Union[date, str, datetime]] = None
+    ) -> Dict[str, Any]:
+        """Determines days remaining, FEFO status tier, shelf-life percentage, and action.
+
+        Classification Tiers:
+        - 'expired' (days <= 0): Quarantine immediately. Do not dispatch.
+        - 'near_expiry' (1-60 days): Urgent priority delivery beat dispatch.
+        - 'safe' (> 60 days): Standard godown storage. Safe for stock rotation.
+
+        Args:
+            exp_date_val: Expiration date of the FMCG inventory batch.
+            mfg_date_val: Optional manufacturing date used for total shelf-life ratio.
+            ref_date: Optional reference evaluation date (defaults to today).
+
+        Returns:
+            Dict[str, Any]: Dictionary containing days_left, status, status_label,
+                badge_class, description, action, shelf_life_percent, and is_dispatchable.
         """
         today = parse_date(ref_date) if ref_date else date.today()
         exp = parse_date(exp_date_val)
@@ -138,22 +178,38 @@ class FEFOEngine:
         }
 
     @classmethod
-    def rank_batches_fefo(cls, batches, ref_date=None):
-        """
-        Ranks batches following FMCG warehouse FEFO principles:
-        1. Near-expiry batches first (ascending days left - urgent dispatch)
+    def rank_batches_fefo(
+        cls,
+        batches: List[Dict[str, Any]],
+        ref_date: Optional[Union[date, str, datetime]] = None
+    ) -> List[Dict[str, Any]]:
+        """Ranks warehouse stock batches strictly by FEFO velocity sequence.
+
+        Priority Order:
+        1. Near-expiry batches first (ascending days left - earliest expiration first)
         2. Safe batches next (ascending days left)
-        3. Expired batches flagged as blocked at the end
+        3. Expired batches at the end (blocked quarantine items)
+
+        Args:
+            batches: List of raw stock batch dictionaries with expiry/mfg fields.
+            ref_date: Optional reference evaluation date.
+
+        Returns:
+            List[Dict[str, Any]]: Enriched list of batches sorted by dispatch urgency.
         """
         today = parse_date(ref_date) if ref_date else date.today()
         enriched = []
         for b in batches:
-            info = cls.calculate_expiry_info(b.get('exp') or b.get('expiry_date'), b.get('mfg') or b.get('mfg_date'), today)
+            info = cls.calculate_expiry_info(
+                b.get('exp') or b.get('expiry_date'),
+                b.get('mfg') or b.get('mfg_date'),
+                today
+            )
             item = dict(b)
             item['fefo_info'] = info
             enriched.append(item)
 
-        def fefo_sort_key(item):
+        def fefo_sort_key(item: Dict[str, Any]) -> Tuple[int, int]:
             info = item['fefo_info']
             if info['status'] == 'near_expiry':
                 return (1, info['days_left'])
@@ -165,9 +221,14 @@ class FEFOEngine:
         return sorted(enriched, key=fefo_sort_key)
 
     @classmethod
-    def generate_batch_qr_payload(cls, batch_data):
-        """
-        Encodes a crate batch verification payload string as clean JSON.
+    def generate_batch_qr_payload(cls, batch_data: Dict[str, Any]) -> str:
+        """Encodes an inventory crate QR validation payload string into compact JSON.
+
+        Args:
+            batch_data: Dictionary containing brand, product, batch, mfg, exp, qty.
+
+        Returns:
+            str: Compact JSON string formatted for QR code generation.
         """
         payload = {
             'id': batch_data.get('id', 1),
@@ -182,10 +243,20 @@ class FEFOEngine:
         return json.dumps(payload, separators=(',', ':'))
 
     @classmethod
-    def decode_and_verify_qr_payload(cls, qr_string, ref_date=None):
-        """
-        Parses and validates scanned crate QR payloads.
-        Returns a structured validation card dictionary.
+    def decode_and_verify_qr_payload(
+        cls,
+        qr_string: str,
+        ref_date: Optional[Union[date, str, datetime]] = None
+    ) -> Dict[str, Any]:
+        """Parses and validates scanned crate QR code JSON payloads.
+
+        Args:
+            qr_string: The raw payload scanned from physical crate barcode/QR code.
+            ref_date: Optional reference evaluation date for expiry status.
+
+        Returns:
+            Dict[str, Any]: Validation result card with valid flag, batch details,
+                and parsed FEFO health analysis.
         """
         try:
             data = json.loads(qr_string)
@@ -214,20 +285,29 @@ class FEFOEngine:
 # 2. ATTENDANCE & MUSTER ROLL ENGINE
 # -------------------------------------------------------------------
 class AttendanceEngine:
-    """
-    Computes daily muster statistics, effective payable days, monthly
-    attendance summaries, and muster roll matrix data.
+    """Godown and field staff attendance, muster roll, and payable days engine.
+
+    Calculates effective daily working credits, muster completion percentages,
+    and 2D calendar matrices for monthly payroll audits.
     """
 
     @classmethod
-    def calculate_worker_summary(cls, records):
-        """
-        Aggregates attendance records for a single worker.
-        Records can be a list of model instances or dictionaries with a 'status' key.
-        - Present: 1.0 day
-        - Paid Leave: 1.0 day
-        - Half Day: 0.5 day
-        - Absent: 0.0 day
+    def calculate_worker_summary(cls, records: List[Any]) -> Dict[str, Any]:
+        """Aggregates attendance records for a worker into effective payable credits.
+
+        Credit Rules:
+        - 'Present': 1.0 day
+        - 'Paid Leave': 1.0 day
+        - 'Half Day': 0.5 day
+        - 'Absent': 0.0 day
+
+        Args:
+            records: Collection of Attendance model instances or status dicts.
+
+        Returns:
+            Dict[str, Any]: Summary containing present_count, half_day_count,
+                paid_leave_count, absent_count, effective_days, total_logged,
+                and attendance_rate percentage.
         """
         present_count = 0
         half_day_count = 0
@@ -260,10 +340,27 @@ class AttendanceEngine:
         }
 
     @classmethod
-    def build_monthly_muster_grid(cls, workers, attendances, year, month):
-        """
-        Constructs the full 2D muster roll matrix for all active workers for a given month.
-        Returns days list (1..N) and worker summary rows with statuses.
+    def build_monthly_muster_grid(
+        cls,
+        workers: List[Any],
+        attendances: List[Any],
+        year: int,
+        month: int
+    ) -> Dict[str, Any]:
+        """Constructs the full 2D muster roll matrix for all active workers.
+
+        Maps each day of the specified calendar month (1..N) to the worker's
+        recorded status ('Present', 'Absent', 'Half Day', 'Paid Leave', or '-').
+
+        Args:
+            workers: List of Worker model instances or worker dictionaries.
+            attendances: List of Attendance records for the calendar month.
+            year: Calendar year (e.g., 2026).
+            month: Calendar month (1..12).
+
+        Returns:
+            Dict[str, Any]: Muster grid structure with year, month, num_days,
+                days list, and row records with daily status arrays.
         """
         num_days = monthrange(year, month)[1]
         days = list(range(1, num_days + 1))
@@ -313,9 +410,22 @@ class AttendanceEngine:
         }
 
     @classmethod
-    def get_daily_snapshot(cls, attendances, total_active_workers, target_date=None):
-        """
-        Computes today's attendance summary: present, half day, absent, and percentage.
+    def get_daily_snapshot(
+        cls,
+        attendances: List[Any],
+        total_active_workers: int,
+        target_date: Optional[Union[date, str, datetime]] = None
+    ) -> Dict[str, Any]:
+        """Calculates a high-level attendance KPI snapshot for a single date.
+
+        Args:
+            attendances: List of attendance records.
+            total_active_workers: Total count of active staff on the roster.
+            target_date: Date to evaluate (defaults to today).
+
+        Returns:
+            Dict[str, Any]: Snapshot containing present_count, half_day_count,
+                absent_count, total_active, and muster_percent.
         """
         d_target = parse_date(target_date) if target_date else date.today()
         today_records = []
@@ -342,15 +452,26 @@ class AttendanceEngine:
 # 3. STAFF ADVANCE KHATA & RECOVERY ENGINE
 # -------------------------------------------------------------------
 class KhataEngine:
-    """
-    Computes pending recoverable advance balances, staff khata ledgers,
-    and automatic wage deduction schedules.
+    """Worker advance loan ledger, balance tracking, and recovery engine.
+
+    Reconciles approved advances against monthly payroll settlements to maintain
+    accurate per-worker debit/credit running balances.
     """
 
     @classmethod
-    def get_pending_advances_total(cls, advances, worker_id=None):
-        """
-        Calculates the sum of approved, unpaid advance khata loans.
+    def get_pending_advances_total(
+        cls,
+        advances: List[Any],
+        worker_id: Optional[int] = None
+    ) -> float:
+        """Sums all approved, unrecovered advance khata loans.
+
+        Args:
+            advances: List of Advance model instances or dictionaries.
+            worker_id: Optional worker identifier to filter the calculation.
+
+        Returns:
+            float: Total pending advance loan sum rounded to 2 decimal places.
         """
         total = 0.0
         for a in advances:
@@ -366,9 +487,19 @@ class KhataEngine:
         return round(total, 2)
 
     @classmethod
-    def get_total_advances_history(cls, advances, worker_id=None):
-        """
-        Calculates total historical advances (Approved + Settled).
+    def get_total_advances_history(
+        cls,
+        advances: List[Any],
+        worker_id: Optional[int] = None
+    ) -> float:
+        """Calculates historical gross advances issued (Approved + Settled).
+
+        Args:
+            advances: List of Advance model instances or dictionaries.
+            worker_id: Optional worker identifier filter.
+
+        Returns:
+            float: Cumulative historical advance disbursements.
         """
         total = 0.0
         for a in advances:
@@ -384,9 +515,24 @@ class KhataEngine:
         return round(total, 2)
 
     @classmethod
-    def build_worker_khata_ledger(cls, worker, advances, settlements):
-        """
-        Builds a running chronological ledger statement for staff khata audits.
+    def build_worker_khata_ledger(
+        cls,
+        worker: Any,
+        advances: List[Any],
+        settlements: List[Any]
+    ) -> Dict[str, Any]:
+        """Builds a running chronological ledger statement for staff khata audits.
+
+        Interleaves advance debits and salary deduction credits in order of date.
+
+        Args:
+            worker: Worker model instance or worker dictionary.
+            advances: Collection of advance loan records.
+            settlements: Collection of payroll salary settlement records.
+
+        Returns:
+            Dict[str, Any]: Ledger containing worker_id, entries list with running
+                balance at each step, and final current_pending_balance.
         """
         w_id = getattr(worker, 'id', None) or (worker.get('id') if isinstance(worker, dict) else None)
         entries = []
@@ -437,15 +583,31 @@ class KhataEngine:
 # 4. SALARY SETTLEMENT & PAYROLL ENGINE
 # -------------------------------------------------------------------
 class PayrollEngine:
-    """
-    Computes monthly gross earned wages, advance deductions, net payable
-    amounts, and payment voucher structures.
+    """Monthly payroll computation, advance clawback, and voucher generator.
+
+    Calculates earned gross wages for daily wage loaders or monthly salaried
+    drivers, subtracts outstanding advance balances, and produces net payouts.
     """
 
     @classmethod
-    def calculate_settlement(cls, worker, effective_days, days_in_month=30, pending_advance=0.0):
-        """
-        Calculates wage breakdown for either daily wage or monthly salaried staff.
+    def calculate_settlement(
+        cls,
+        worker: Any,
+        effective_days: float,
+        days_in_month: int = 30,
+        pending_advance: float = 0.0
+    ) -> Dict[str, Any]:
+        """Calculates earned gross wages, advance recovery, and net payable wages.
+
+        Args:
+            worker: Worker model instance or dictionary with wage details.
+            effective_days: Total verified payable days worked in the month.
+            days_in_month: Days in the settlement month (default: 30).
+            pending_advance: Total outstanding unrecovered advance balance.
+
+        Returns:
+            Dict[str, Any]: Detailed wage calculation dictionary including gross_earned,
+                advance_deduction, net_payable, and remaining_advance.
         """
         daily_rate = float(getattr(worker, 'daily_wage', 0) or (worker.get('daily_wage', 0) if isinstance(worker, dict) else 0))
         monthly_fixed = float(getattr(worker, 'monthly_fixed_salary', 0) or (worker.get('monthly_fixed_salary', 0) if isinstance(worker, dict) else 0))
@@ -476,9 +638,21 @@ class PayrollEngine:
         }
 
     @classmethod
-    def generate_voucher_data(cls, settlement, worker, voucher_number=None):
-        """
-        Formats printable wage payment voucher payload.
+    def generate_voucher_data(
+        cls,
+        settlement: Any,
+        worker: Any,
+        voucher_number: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Formats a printable official wage payment voucher payload.
+
+        Args:
+            settlement: SalarySettlement model instance or dictionary.
+            worker: Associated Worker model instance or dictionary.
+            voucher_number: Optional explicit voucher serial code.
+
+        Returns:
+            Dict[str, Any]: Formatted payment voucher dictionary.
         """
         w_id = getattr(worker, 'id', None) or (worker.get('id') if isinstance(worker, dict) else None)
         w_name = getattr(worker, 'name', None) or (worker.get('name') if isinstance(worker, dict) else 'Worker')
@@ -511,15 +685,29 @@ class PayrollEngine:
 # 5. VEHICLE FLEET & FUEL ANALYTICS ENGINE
 # -------------------------------------------------------------------
 class FleetAnalyticsEngine:
-    """
-    Computes fleet fuel expenditures, liters consumed, month-over-month
-    variance percentages, and 6-month chart trends.
+    """Delivery vehicle fleet fuel efficiency, consumption, and cost trend engine.
+
+    Computes monthly spend per fuel type (Diesel, Petrol, CNG), month-over-month
+    variances, and multi-month historical series for Chart.js dashboard widgets.
     """
 
     @classmethod
-    def calculate_monthly_fuel_stats(cls, fuel_expenses, year, month):
-        """
-        Aggregates fuel expenditures and volume for a specific calendar month.
+    def calculate_monthly_fuel_stats(
+        cls,
+        fuel_expenses: List[Any],
+        year: int,
+        month: int
+    ) -> Dict[str, Any]:
+        """Aggregates fuel expenditures and consumption volume for a calendar month.
+
+        Args:
+            fuel_expenses: List of FuelExpense records.
+            year: Calendar year (e.g., 2026).
+            month: Calendar month (1..12).
+
+        Returns:
+            Dict[str, Any]: Aggregation including total_spent, total_liters,
+                avg_cost_per_liter, and breakdown by fuel type.
         """
         total_spent = 0.0
         total_liters = 0.0
@@ -554,9 +742,20 @@ class FleetAnalyticsEngine:
         }
 
     @classmethod
-    def calculate_mom_fuel_trend(cls, cur_spent, prev_spent):
-        """
-        Computes month-over-month fuel variance percentage.
+    def calculate_mom_fuel_trend(
+        cls,
+        cur_spent: float,
+        prev_spent: float
+    ) -> Dict[str, Any]:
+        """Computes month-over-month fuel expenditure variance percentage.
+
+        Args:
+            cur_spent: Total fuel expenditure in current evaluation month.
+            prev_spent: Total fuel expenditure in prior month.
+
+        Returns:
+            Dict[str, Any]: Trend variance dictionary with diff_amount,
+                diff_percent, and is_increase indicator.
         """
         cur = float(cur_spent or 0)
         prev = float(prev_spent or 0)
@@ -571,10 +770,22 @@ class FleetAnalyticsEngine:
         }
 
     @classmethod
-    def generate_fuel_chart_data(cls, fuel_expenses, num_months=6, end_date=None):
-        """
-        Generates 6-month historical trend series for Chart.js.
-        Returns labels, actual series, and budget baseline.
+    def generate_fuel_chart_data(
+        cls,
+        fuel_expenses: List[Any],
+        num_months: int = 6,
+        end_date: Optional[Union[date, str, datetime]] = None
+    ) -> Dict[str, Any]:
+        """Generates historical fuel cost time-series for Chart.js line charts.
+
+        Args:
+            fuel_expenses: List of all fuel records.
+            num_months: Number of past calendar months to compile (default: 6).
+            end_date: Reference ending date (defaults to today).
+
+        Returns:
+            Dict[str, Any]: Chart dataset dictionary with labels, actual_spent,
+                budget_baseline, and average_monthly_spent.
         """
         ref = parse_date(end_date) if end_date else date.today()
         month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -614,16 +825,27 @@ class FleetAnalyticsEngine:
 # 6. BEAT DISPATCH SAFETY & CAPACITY ENGINE
 # -------------------------------------------------------------------
 class DispatchEngine:
-    """
-    Validates vehicle route assignments, active dispatch locks, and
-    aggregates Everest crates & Colgate cartons dispatches.
+    """Beat dispatch route conflict detection and cargo volume engine.
+
+    Enforces fleet route locking to prevent double-booking or deleting vehicles
+    currently on active dispatched beats, and sums Everest crate/Colgate carton dispatches.
     """
 
     @classmethod
-    def check_vehicle_dispatch_availability(cls, vehicle_id, dispatch_beats):
-        """
-        Safeguard: Verifies whether a vehicle is currently assigned to a
-        live dispatched route. Prevents accidental route conflict or deletion.
+    def check_vehicle_dispatch_availability(
+        cls,
+        vehicle_id: Union[int, str],
+        dispatch_beats: List[Any]
+    ) -> Dict[str, Any]:
+        """Safeguard: Verifies if a vehicle is currently locked to a live dispatch route.
+
+        Args:
+            vehicle_id: Unique ID of the vehicle to check.
+            dispatch_beats: List of all dispatch beat records.
+
+        Returns:
+            Dict[str, Any]: Availability card with is_available boolean, active_beat,
+                beat_name, and descriptive user guidance message.
         """
         v_id = int(vehicle_id)
         for b in dispatch_beats:
@@ -647,9 +869,20 @@ class DispatchEngine:
         }
 
     @classmethod
-    def calculate_daily_dispatch_metrics(cls, dispatch_beats, target_date=None):
-        """
-        Aggregates Everest crates and Colgate cartons dispatched on target date.
+    def calculate_daily_dispatch_metrics(
+        cls,
+        dispatch_beats: List[Any],
+        target_date: Optional[Union[date, str, datetime]] = None
+    ) -> Dict[str, Any]:
+        """Sums cargo volumes (Everest crates & Colgate cartons) dispatched on target date.
+
+        Args:
+            dispatch_beats: List of all dispatch beat records.
+            target_date: Date to calculate cargo volumes for (defaults to today).
+
+        Returns:
+            Dict[str, Any]: Metrics including total_everest_crates, total_colgate_cartons,
+                active_beats_count, completed_beats_count, and total_dispatches.
         """
         d_target = parse_date(target_date) if target_date else date.today()
 
@@ -688,15 +921,32 @@ class DispatchEngine:
 # 7. DAMAGED & EXPIRY RETURNS CLAIMS ENGINE
 # -------------------------------------------------------------------
 class DamageClaimsEngine:
-    """
-    Computes damaged stock valuations, credit note reconciliation,
-    and brand split between Everest Spices & Colgate-Palmolive.
+    """Retailer return claims valuation and manufacturer credit note engine.
+
+    Tracks damaged or expired goods returned by retailers and computes
+    credit note claim amounts split by brand (Everest Spices vs. Colgate-Palmolive).
     """
 
     @classmethod
-    def calculate_claims_summary(cls, damaged_returns):
-        """
-        Aggregates credit note claims by status and brand.
+    def calculate_claims_summary(
+        cls,
+        damaged_returns: List[Any]
+    ) -> Dict[str, Any]:
+        """Aggregates claim amounts and counts by status and brand.
+
+        Statuses evaluated:
+        - 'Pending Inspection'
+        - 'Submitted to Depot'
+        - 'Approved & Credited'
+        - 'Rejected'
+
+        Args:
+            damaged_returns: Collection of DamagedReturn records.
+
+        Returns:
+            Dict[str, Any]: Valuation summary with total_claims_valuation,
+                pending_claims_valuation, approved_claims_valuation,
+                rejected_claims_valuation, status_counts, and brand_valuation.
         """
         total_claims_val = 0.0
         pending_val = 0.0
@@ -746,11 +996,12 @@ class DamageClaimsEngine:
 # 8. MULTI-SHEET BACKUP VALIDATION ENGINE
 # -------------------------------------------------------------------
 class BackupEngine:
+    """Multi-sheet XLSX and JSON backup validation and schema normalization engine.
+
+    Validates that database export/import payloads contain recognized distributor
+    module schemas across all 7 operational facets.
     """
-    Validates and normalizes multi-sheet backup payloads (XLSX / JSON)
-    spanning the 7 core distributor management modules.
-    """
-    MODULE_KEYS = (
+    MODULE_KEYS: Tuple[str, ...] = (
         'workers',
         'attendances',
         'advances',
@@ -761,9 +1012,14 @@ class BackupEngine:
     )
 
     @classmethod
-    def validate_backup_payload(cls, data):
-        """
-        Validates whether a dictionary contains valid distributor state data.
+    def validate_backup_payload(cls, data: Any) -> Tuple[bool, str]:
+        """Validates whether an input dictionary contains valid distributor state data.
+
+        Args:
+            data: Arbitrary object to validate against distribution backup schema.
+
+        Returns:
+            Tuple[bool, str]: (is_valid, validation_message)
         """
         if not isinstance(data, dict):
             return False, "Payload is not a valid dictionary structure"
@@ -775,11 +1031,19 @@ class BackupEngine:
         return True, "Valid backup structure"
 
     @classmethod
-    def normalize_backup_dataset(cls, raw_data):
+    def normalize_backup_dataset(
+        cls,
+        raw_data: Dict[str, Any]
+    ) -> Dict[str, List[Any]]:
+        """Ensures all 7 distributor modules exist as list structures with fallbacks.
+
+        Args:
+            raw_data: Raw dictionary loaded from JSON or Excel parser.
+
+        Returns:
+            Dict[str, List[Any]]: Normalized dictionary with all 7 keys guaranteed to be lists.
         """
-        Ensures all 7 modules exist as lists, providing fallback defaults.
-        """
-        normalized = {}
+        normalized: Dict[str, List[Any]] = {}
         for k in cls.MODULE_KEYS:
             val = raw_data.get(k)
             normalized[k] = list(val) if isinstance(val, (list, tuple)) else []

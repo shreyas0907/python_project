@@ -1,6 +1,19 @@
+"""
+Anupama Agencies — FMCG Distributor Management Portal
+Flask Application Core Routes & Web Server Handlers
+
+Authorized Wholesale Regional Distributor for:
+- Everest Spices (Direct Crate Beats)
+- Colgate-Palmolive (Oral Care & Personal Hygiene Cartons)
+
+This module provides web routes, REST API endpoints, CSV reports, Jinja template
+rendering, and state orchestration for all FMCG distribution godown operations.
+"""
+
 import os
 from datetime import datetime, date, timedelta
 from calendar import monthrange
+from typing import Any, Dict, List, Optional, Union
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement
 from database import init_db
@@ -23,11 +36,24 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 
 # Register Jinja context filters and functions
 @app.template_filter('inr')
-def inr_filter(value):
+def inr_filter(value: Any) -> str:
+    """Jinja template filter to format numerical values into Indian Rupee strings.
+
+    Args:
+        value: Numeric value (float, int, or numeric string).
+
+    Returns:
+        str: Formatted currency string with ₹ symbol and Indian numbering format.
+    """
     return format_inr(value)
 
 @app.context_processor
-def inject_global_vars():
+def inject_global_vars() -> Dict[str, Any]:
+    """Injects global date and time context variables into all Jinja templates.
+
+    Returns:
+        Dict[str, Any]: Dictionary containing today, current_year, current_month, and now.
+    """
     today = date.today()
     return {
         'today': today,
@@ -45,6 +71,15 @@ init_db(app)
 # -------------------------------------------------------------------
 @app.route('/')
 def dashboard():
+    """Renders the soft-minimalist executive dashboard or serves standalone SPA.
+
+    Aggregates active workers, today's attendance muster, unrecovered khata advances,
+    current vs previous month fuel expenditure, active beat dispatches, and pending
+    damaged/expiry credit note claims.
+
+    Returns:
+        Response: Rendered dashboard.html template or static index.html file.
+    """
     index_file = os.path.join(app.root_path, 'index.html')
     if os.path.exists(index_file) and request.args.get('classic') != '1':
         return send_from_directory(app.root_path, 'index.html')
@@ -130,6 +165,14 @@ def dashboard():
 # -------------------------------------------------------------------
 @app.route('/workers')
 def workers_list():
+    """Lists active and archived godown workers with monthly working summaries.
+
+    Filters workers by role, active/inactive status, or text search, and computes
+    current month working days, pending advances, and earned wages.
+
+    Returns:
+        Response: Rendered workers/index.html template with worker statistics.
+    """
     role_filter = request.args.get('role', '')
     status_filter = request.args.get('status', 'Active')
     search = request.args.get('q', '').strip().lower()
@@ -164,6 +207,13 @@ def workers_list():
 
 @app.route('/workers/add', methods=['POST'])
 def add_worker():
+    """Handles form submission to register a new worker on the godown roster.
+
+    Saves uploaded staff photo securely and records daily wage and contact info.
+
+    Returns:
+        Response: Redirect to workers_list view on success.
+    """
     name = request.form.get('name', '').strip()
     phone = request.form.get('phone', '').strip()
     emergency_contact = request.form.get('emergency_contact', '').strip()
@@ -196,7 +246,15 @@ def add_worker():
 
 
 @app.route('/workers/<int:id>')
-def worker_profile(id):
+def worker_profile(id: int):
+    """Displays individual worker profile, attendance history, and khata advances.
+
+    Args:
+        id: Unique integer primary key of the Worker.
+
+    Returns:
+        Response: Rendered workers/view.html template.
+    """
     worker = Worker.query.get_or_404(id)
     today = date.today()
     
@@ -233,7 +291,15 @@ def worker_profile(id):
 
 
 @app.route('/workers/<int:id>/edit', methods=['POST'])
-def edit_worker(id):
+def edit_worker(id: int):
+    """Updates worker profile details, contact information, role, and daily wage.
+
+    Args:
+        id: Unique integer primary key of the Worker.
+
+    Returns:
+        Response: Redirect to worker_profile view.
+    """
     worker = Worker.query.get_or_404(id)
     worker.name = request.form.get('name', worker.name).strip()
     worker.phone = request.form.get('phone', worker.phone).strip()
@@ -260,6 +326,14 @@ def edit_worker(id):
 # -------------------------------------------------------------------
 @app.route('/attendance')
 def attendance_register():
+    """Renders the daily godown attendance roster for marking worker statuses.
+
+    Loads all active staff and fetches any existing recorded statuses for the
+    requested target date (defaults to today).
+
+    Returns:
+        Response: Rendered attendance/register.html template.
+    """
     date_str = request.args.get('date')
     if date_str:
         try:
@@ -290,6 +364,13 @@ def attendance_register():
 
 @app.route('/attendance/save', methods=['POST'])
 def save_attendance():
+    """Processes daily attendance form submission across all active workers.
+
+    Creates or updates attendance records with Present, Absent, Half Day, or Paid Leave.
+
+    Returns:
+        Response: Redirect to attendance_register for the recorded date.
+    """
     date_str = request.form.get('date')
     target_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else date.today()
     
@@ -318,6 +399,14 @@ def save_attendance():
 
 @app.route('/attendance/monthly')
 def monthly_attendance():
+    """Generates the 2D muster roll matrix for a selected month and year.
+
+    Displays each day of the month along the horizontal axis and worker status
+    rows along the vertical axis with monthly summary aggregations.
+
+    Returns:
+        Response: Rendered attendance/monthly.html template.
+    """
     today = date.today()
     year = int(request.args.get('year', today.year))
     month = int(request.args.get('month', today.month))
@@ -358,6 +447,13 @@ def monthly_attendance():
 # -------------------------------------------------------------------
 @app.route('/advances')
 def advances_ledger():
+    """Renders the worker advance khata ledger and total outstanding balances.
+
+    Allows filtering by worker ID or advance status (Approved, Settled, Pending).
+
+    Returns:
+        Response: Rendered advances/index.html template.
+    """
     worker_filter = request.args.get('worker_id', '')
     status_filter = request.args.get('status', '')
     
@@ -391,6 +487,13 @@ def advances_ledger():
 
 @app.route('/advances/add', methods=['POST'])
 def add_advance():
+    """Records a new advance payment loan issued to a worker.
+
+    Disburses funds via Cash, UPI, or Bank Transfer and adds an Approved entry.
+
+    Returns:
+        Response: Redirect to advances_ledger view on success.
+    """
     worker_id = int(request.form.get('worker_id'))
     amount = float(request.form.get('amount', 0))
     payment_mode = request.form.get('payment_mode', 'Cash')
@@ -419,7 +522,15 @@ def add_advance():
 
 
 @app.route('/advances/<int:id>/status', methods=['POST'])
-def update_advance_status(id):
+def update_advance_status(id: int):
+    """Updates the status of an advance payment loan.
+
+    Args:
+        id: Unique integer primary key of the Advance.
+
+    Returns:
+        Response: Redirect to referrer or advances_ledger.
+    """
     adv = Advance.query.get_or_404(id)
     new_status = request.form.get('status', adv.status)
     adv.status = new_status
@@ -433,6 +544,14 @@ def update_advance_status(id):
 # -------------------------------------------------------------------
 @app.route('/fuel')
 def fuel_tracker():
+    """Renders the delivery fleet fuel tracking dashboard and cost analytics.
+
+    Computes monthly expenditures, total liters consumed, previous month variance,
+    and vehicle-wise fuel breakdown for the selected month and year.
+
+    Returns:
+        Response: Rendered fuel/index.html template.
+    """
     today = date.today()
     cur_year = int(request.args.get('year', today.year))
     cur_month = int(request.args.get('month', today.month))
@@ -492,6 +611,13 @@ def fuel_tracker():
 
 @app.route('/fuel/add', methods=['POST'])
 def add_fuel_expense():
+    """Logs a new fuel expense slip for a delivery vehicle.
+
+    Uploads fuel slip image and saves liters, amount, and odometer reading.
+
+    Returns:
+        Response: Redirect to fuel_tracker view.
+    """
     vehicle_id = int(request.form.get('vehicle_id'))
     driver_id = request.form.get('driver_id')
     driver_id_val = int(driver_id) if driver_id else None
@@ -529,6 +655,11 @@ def add_fuel_expense():
 
 @app.route('/fuel/vehicles')
 def vehicles_registry():
+    """Renders the delivery vehicle fleet registry and driver assignments.
+
+    Returns:
+        Response: Rendered fuel/vehicles.html template.
+    """
     vehicles = Vehicle.query.order_by(Vehicle.vehicle_name).all()
     drivers = Worker.query.filter_by(status='Active').all()
     return render_template('fuel/vehicles.html', vehicles=vehicles, drivers=drivers)
@@ -536,6 +667,11 @@ def vehicles_registry():
 
 @app.route('/fuel/vehicles/add', methods=['POST'])
 def add_vehicle():
+    """Registers a new vehicle in the distribution fleet.
+
+    Returns:
+        Response: Redirect to vehicles_registry view on success.
+    """
     vehicle_number = request.form.get('vehicle_number', '').strip().upper()
     vehicle_name = request.form.get('vehicle_name', '').strip()
     vehicle_type = request.form.get('vehicle_type', 'Delivery Van')
@@ -558,7 +694,15 @@ def add_vehicle():
 
 
 @app.route('/fuel/vehicles/delete/<int:vehicle_id>', methods=['POST'])
-def delete_vehicle(vehicle_id):
+def delete_vehicle(vehicle_id: int):
+    """Deletes a delivery vehicle with active route dispatch protection.
+
+    Args:
+        vehicle_id: Unique integer primary key of the Vehicle to delete.
+
+    Returns:
+        Response: Redirect to vehicles_registry view.
+    """
     veh = Vehicle.query.get_or_404(vehicle_id)
     # Check if vehicle has any active route currently DISPATCHED
     active_beat = DispatchBeat.query.filter_by(vehicle_id=vehicle_id, status='Dispatched').first()
@@ -578,6 +722,11 @@ def delete_vehicle(vehicle_id):
 # -------------------------------------------------------------------
 @app.route('/dispatches')
 def beat_dispatches():
+    """Renders daily FMCG beat dispatches and total Everest/Colgate counts.
+
+    Returns:
+        Response: Rendered dispatches/index.html template.
+    """
     today = date.today()
     date_filter = request.args.get('date', '')
     query = DispatchBeat.query
@@ -610,6 +759,11 @@ def beat_dispatches():
 
 @app.route('/dispatches/add', methods=['POST'])
 def add_dispatch():
+    """Records a new route dispatch beat with assigned vehicle, driver, and helper.
+
+    Returns:
+        Response: Redirect to beat_dispatches view.
+    """
     beat_name = request.form.get('beat_name', '').strip()
     vehicle_id = int(request.form.get('vehicle_id'))
     driver_id = request.form.get('driver_id')
@@ -640,7 +794,15 @@ def add_dispatch():
 
 
 @app.route('/dispatches/<int:id>/status', methods=['POST'])
-def update_dispatch_status(id):
+def update_dispatch_status(id: int):
+    """Updates beat dispatch route status (Dispatched, Completed, Cancelled).
+
+    Args:
+        id: Unique integer primary key of the DispatchBeat.
+
+    Returns:
+        Response: Redirect to beat_dispatches view.
+    """
     dispatch = DispatchBeat.query.get_or_404(id)
     new_status = request.form.get('status', 'Completed')
     dispatch.status = new_status
@@ -654,6 +816,11 @@ def update_dispatch_status(id):
 # -------------------------------------------------------------------
 @app.route('/returns')
 def returns_tracker():
+    """Renders damaged and expired FMCG return logs and claim valuations.
+
+    Returns:
+        Response: Rendered returns/index.html template.
+    """
     brand_filter = request.args.get('brand', '')
     status_filter = request.args.get('status', '')
     
@@ -682,6 +849,11 @@ def returns_tracker():
 
 @app.route('/returns/add', methods=['POST'])
 def add_return():
+    """Logs a damaged or expired product return claim from a retailer.
+
+    Returns:
+        Response: Redirect to returns_tracker view.
+    """
     brand = request.form.get('brand', 'Everest Spices')
     product_name = request.form.get('product_name', '').strip()
     retailer_name = request.form.get('retailer_name', '').strip()
@@ -716,7 +888,15 @@ def add_return():
 
 
 @app.route('/returns/<int:id>/update-claim', methods=['POST'])
-def update_return_claim(id):
+def update_return_claim(id: int):
+    """Updates credit note status and approved compensation amount for a claim.
+
+    Args:
+        id: Unique integer primary key of the DamagedReturn.
+
+    Returns:
+        Response: Redirect to returns_tracker view.
+    """
     ret = DamagedReturn.query.get_or_404(id)
     ret.claim_status = request.form.get('claim_status', ret.claim_status)
     ret.credit_note_amount = float(request.form.get('credit_note_amount') or ret.credit_note_amount)
@@ -731,6 +911,14 @@ def update_return_claim(id):
 # -------------------------------------------------------------------
 @app.route('/settlements')
 def settlements_calculator():
+    """Renders monthly salary settlement calculations and advance clawbacks.
+
+    Calculates earned wages based on effective attendance days, shows pending
+    advances, and automatically computes net payouts after loan deductions.
+
+    Returns:
+        Response: Rendered settlements/index.html template.
+    """
     today = date.today()
     year = int(request.args.get('year', today.year))
     month = int(request.args.get('month', today.month))
@@ -774,6 +962,13 @@ def settlements_calculator():
 
 @app.route('/settlements/process', methods=['POST'])
 def process_settlement():
+    """Processes wage payment settlement and auto-settles pending advances.
+
+    Deducts unrecovered loans from gross earnings and records official payout.
+
+    Returns:
+        Response: Redirect to settlement_voucher view for the created settlement.
+    """
     worker_id = int(request.form.get('worker_id'))
     month_year = request.form.get('month_year')
     worker = Worker.query.get_or_404(worker_id)
@@ -868,7 +1063,15 @@ def process_settlement():
 
 
 @app.route('/settlements/voucher/<int:id>')
-def settlement_voucher(id):
+def settlement_voucher(id: int):
+    """Renders printable wage payment slip/voucher for signed acknowledgment.
+
+    Args:
+        id: Unique integer primary key of the SalarySettlement.
+
+    Returns:
+        Response: Rendered settlements/voucher.html template.
+    """
     settlement = SalarySettlement.query.get_or_404(id)
     return render_template('settlements/voucher.html', settlement=settlement)
 
@@ -878,6 +1081,11 @@ def settlement_voucher(id):
 # -------------------------------------------------------------------
 @app.route('/export/attendance')
 def export_attendance_csv():
+    """Exports complete attendance register history as downloadable UTF-8 CSV.
+
+    Returns:
+        Response: CSV file attachment response.
+    """
     records = Attendance.query.join(Worker).order_by(Attendance.date.desc()).all()
     headers = ['Attendance ID', 'Date', 'Worker Name', 'Role', 'Status', 'Notes']
     rows = []
@@ -895,6 +1103,11 @@ def export_attendance_csv():
 
 @app.route('/export/advances')
 def export_advances_csv():
+    """Exports advance khata ledger history as downloadable UTF-8 CSV.
+
+    Returns:
+        Response: CSV file attachment response.
+    """
     records = Advance.query.join(Worker).order_by(Advance.payment_date.desc()).all()
     headers = ['Advance ID', 'Worker Name', 'Role', 'Request Date', 'Payment Date', 'Amount Paid (INR)', 'Payment Mode', 'Reason', 'Status']
     rows = []
@@ -915,6 +1128,11 @@ def export_advances_csv():
 
 @app.route('/export/fuel')
 def export_fuel_csv():
+    """Exports fleet fuel expense logs as downloadable UTF-8 CSV.
+
+    Returns:
+        Response: CSV file attachment response.
+    """
     records = FuelExpense.query.join(Vehicle).order_by(FuelExpense.date.desc()).all()
     headers = ['Expense ID', 'Date', 'Vehicle Number', 'Vehicle Name', 'Driver', 'Fuel Type', 'Amount Spent (INR)', 'Liters', 'Odometer Reading', 'Notes']
     rows = []
@@ -937,6 +1155,11 @@ def export_fuel_csv():
 
 @app.route('/export/settlements')
 def export_settlements_csv():
+    """Exports monthly payroll settlement logs as downloadable UTF-8 CSV.
+
+    Returns:
+        Response: CSV file attachment response.
+    """
     records = SalarySettlement.query.join(Worker).order_by(SalarySettlement.settlement_date.desc()).all()
     headers = ['Settlement ID', 'Month-Year', 'Worker Name', 'Role', 'Effective Days', 'Daily Wage (INR)', 'Gross Earnings (INR)', 'Advances Deducted (INR)', 'Bonus/Incentive (INR)', 'Net Payout (INR)', 'Payment Date', 'Payment Mode', 'Reference']
     rows = []
@@ -961,6 +1184,11 @@ def export_settlements_csv():
 
 @app.route('/export/returns')
 def export_returns_csv():
+    """Exports damaged & expiry return claim logs as downloadable UTF-8 CSV.
+
+    Returns:
+        Response: CSV file attachment response.
+    """
     records = DamagedReturn.query.order_by(DamagedReturn.return_date.desc()).all()
     headers = ['Return ID', 'Date', 'Brand', 'Product Name', 'Retailer Name', 'Batch No', 'Expiry Date', 'Quantity', 'Unit', 'Reason', 'Claim Status', 'Credit Note Amount (INR)', 'Credit Note Number', 'Notes']
     rows = []
@@ -989,9 +1217,12 @@ def export_returns_csv():
 # -------------------------------------------------------------------
 @app.route('/api/fefo/analyze', methods=['GET', 'POST'])
 def api_fefo_analyze():
-    """
-    Analyzes stock batches using the backend FEFOEngine.
+    """Analyzes stock batches using the backend FEFOEngine.
+
     Computes shelf life percentages, expiry thresholds, and priority dispatch ranking.
+
+    Returns:
+        Response: JSON response with ranked batches and shelf life analytics.
     """
     if request.method == 'POST':
         data = request.get_json(silent=True) or {}
@@ -1011,9 +1242,14 @@ def api_fefo_analyze():
 
 
 @app.route('/api/attendance/summary/<int:worker_id>')
-def api_attendance_summary(worker_id):
-    """
-    Computes attendance metrics, effective payable days, and muster stats for a worker.
+def api_attendance_summary(worker_id: int):
+    """Computes attendance metrics, effective payable days, and muster stats for a worker.
+
+    Args:
+        worker_id: Unique integer primary key of the Worker.
+
+    Returns:
+        Response: JSON response containing attendance summary and pending advances.
     """
     worker = Worker.query.get_or_404(worker_id)
     year = request.args.get('year', date.today().year, type=int)
@@ -1041,8 +1277,10 @@ def api_attendance_summary(worker_id):
 
 @app.route('/api/fuel/analytics')
 def api_fuel_analytics():
-    """
-    Computes fleet fuel expenditure trends and 6-month historical Chart.js data.
+    """Computes fleet fuel expenditure trends and 6-month historical Chart.js data.
+
+    Returns:
+        Response: JSON response with current month, previous month, and trend series.
     """
     all_expenses = FuelExpense.query.all()
     today = date.today()
@@ -1065,8 +1303,10 @@ def api_fuel_analytics():
 
 @app.route('/api/dispatches/metrics')
 def api_dispatches_metrics():
-    """
-    Computes daily dispatch metrics (Everest crates, Colgate cartons, active routes).
+    """Computes daily dispatch metrics (Everest crates, Colgate cartons, active routes).
+
+    Returns:
+        Response: JSON response containing daily dispatch metrics.
     """
     target_date = request.args.get('date', date.today().strftime('%Y-%m-%d'))
     all_dispatches = DispatchBeat.query.all()
@@ -1079,8 +1319,10 @@ def api_dispatches_metrics():
 
 @app.route('/api/returns/summary')
 def api_returns_summary():
-    """
-    Computes damaged & expiry claims valuation and brand breakdown.
+    """Computes damaged & expiry claims valuation and brand breakdown.
+
+    Returns:
+        Response: JSON response with claim totals and brand distribution.
     """
     all_returns = DamagedReturn.query.all()
     summary = DamageClaimsEngine.calculate_claims_summary(all_returns)

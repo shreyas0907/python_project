@@ -361,3 +361,38 @@ def test_api_returns_summary(client, seeded_app):
     json_data = resp.get_json()
     assert json_data['status'] == 'success'
     assert 'claims_summary' in json_data
+
+
+def test_routes_not_found_handling(client):
+    """Test that accessing nonexistent entities returns HTTP 404 cleanly."""
+    assert client.get('/workers/99999').status_code == 404
+    assert client.post('/workers/99999/edit').status_code == 404
+    assert client.post('/advances/99999/status').status_code == 404
+    assert client.post('/fuel/vehicles/delete/99999').status_code == 404
+    assert client.post('/dispatches/99999/status').status_code == 404
+    assert client.post('/returns/99999/update-claim').status_code == 404
+    assert client.get('/settlements/voucher/99999').status_code == 404
+    assert client.get('/api/attendance/summary/99999').status_code == 404
+
+
+def test_advances_filtered_view(client, seeded_app):
+    """Test filtering advances ledger by worker_id and status."""
+    resp = client.get('/advances?worker_id=1&status=Approved')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Advance Khata" in html or "Advances" in html
+
+
+def test_dispatches_filtered_by_date(client, seeded_app):
+    """Test filtering daily beat dispatches by calendar date."""
+    today_str = date.today().strftime('%Y-%m-%d')
+    resp = client.get(f'/dispatches?date={today_str}')
+    assert resp.status_code == 200
+
+
+def test_fuel_tracker_filtered(client, seeded_app):
+    """Test fuel tracker page rendering with seeded fleet expenses."""
+    resp = client.get('/fuel')
+    assert resp.status_code == 200
+    assert b"Fuel" in resp.data
+

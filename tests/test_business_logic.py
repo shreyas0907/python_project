@@ -317,3 +317,75 @@ def test_backup_engine_validation():
     invalid_payload = {'something_else': 123}
     is_valid2, _ = BackupEngine.validate_backup_payload(invalid_payload)
     assert is_valid2 is False
+
+
+def test_fefo_same_day_expiry():
+    """Batch expiring today must be marked expired."""
+    today = date(2026, 11, 25)
+    info = FEFOEngine.calculate_expiry_info('2026-11-25', ref_date=today)
+    assert info['status'] == 'expired'
+    assert info['days_left'] == 0
+    assert info['is_dispatchable'] is False
+
+
+def test_fefo_leap_year_handling():
+    """Correctly handles leap year dates (e.g. 2028-02-29)."""
+    ref = date(2028, 2, 27)
+    info = FEFOEngine.calculate_expiry_info('2028-02-29', ref_date=ref)
+    assert info['days_left'] == 2
+    assert info['status'] == 'near_expiry'
+
+
+def test_fefo_empty_and_single_batch():
+    """Handles empty list or single batch list."""
+    assert FEFOEngine.rank_batches_fefo([]) == []
+
+    single = [{'brand': 'Everest', 'product': 'Masala', 'batch': 'B1', 'exp': '2027-01-01', 'qty': 10}]
+    ranked = FEFOEngine.rank_batches_fefo(single)
+    assert len(ranked) == 1
+    assert ranked[0]['batch'] == 'B1'
+
+
+def test_attendance_worker_all_absent():
+    """Worker with only Absent statuses returns 0% attendance."""
+    records = [{'status': 'Absent'}, {'status': 'Absent'}, {'status': 'Absent'}]
+    summary = AttendanceEngine.calculate_worker_summary(records)
+    assert summary['effective_days'] == 0.0
+    assert summary['absent_count'] == 3
+    assert summary['attendance_rate'] == 0.0
+
+
+def test_attendance_worker_all_paid_leave():
+    """Worker with only Paid Leave statuses returns 100% attendance."""
+    records = [{'status': 'Paid Leave'}, {'status': 'Paid Leave'}]
+    summary = AttendanceEngine.calculate_worker_summary(records)
+    assert summary['effective_days'] == 2.0
+    assert summary['paid_leave_count'] == 2
+    assert summary['attendance_rate'] == 100.0
+
+
+def test_khata_empty_records():
+    """Calculations on empty advances list return 0.0."""
+    assert KhataEngine.get_pending_advances_total([]) == 0.0
+    assert KhataEngine.get_total_advances_history([]) == 0.0
+
+    ledger = KhataEngine.build_worker_khata_ledger({'id': 1, 'name': 'Worker A'}, [], [])
+    assert ledger['current_pending_balance'] == 0.0
+    assert len(ledger['entries']) == 0
+
+
+def test_fleet_mom_zero_previous_spend():
+    """Zero previous month fuel spend safely produces 0.0% variance."""
+    trend = FleetAnalyticsEngine.calculate_mom_fuel_trend(cur_spent=5000, prev_spent=0)
+    assert trend['diff_amount'] == 5000.0
+    assert trend['diff_percent'] == 0.0
+    assert trend['is_increase'] is True
+
+
+def test_dispatch_engine_nonexistent_vehicle():
+    """Checking availability for a vehicle ID not in any route returns is_available=True."""
+    beats = [{'vehicle_id': 1, 'status': 'Dispatched', 'beat_name': 'Route 1'}]
+    res = DispatchEngine.check_vehicle_dispatch_availability(999, beats)
+    assert res['is_available'] is True
+    assert res['active_beat'] is None
+

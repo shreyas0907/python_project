@@ -1,35 +1,71 @@
+"""
+Database initialization and data seeding routines for Anupama Agencies.
+
+This module handles automatic database schema generation upon application startup,
+creates necessary persistent upload directories, and seeds realistic FMCG distribution
+mock datasets representing Everest Spices and Colgate-Palmolive operations (workers, fleet,
+attendance records, staff advances, fuel refill logs, daily beat dispatches, and damaged
+claims registers).
+"""
+
 import os
 from datetime import date, timedelta
-from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement
+from typing import Any, Optional
+from models import (
+    db, Worker, Attendance, Advance, Vehicle,
+    FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement
+)
 
-def init_db(app):
-    """
-    Initializes the database and populates realistic mock data if tables are empty.
+
+def init_db(app: Any) -> None:
+    """Initializes the SQLite database tables and seeds demo FMCG operational data.
+
+    Ensures target upload directories for worker portraits and fuel receipts exist,
+    creates all database tables defined in SQLAlchemy ORM models, and triggers initial
+    data population if the database is currently unseeded.
+
+    Args:
+        app (Flask): Active Flask application instance whose application context is used.
     """
     with app.app_context():
         # Ensure uploads directories exist
         os.makedirs(os.path.join(app.root_path, 'static', 'uploads', 'workers'), exist_ok=True)
         os.makedirs(os.path.join(app.root_path, 'static', 'uploads', 'receipts'), exist_ok=True)
-        
+
         db.create_all()
-        
+
         # Check if seed data is already present
         if Worker.query.first() is None:
             seed_initial_data()
 
-def seed_database(app=None):
-    """
-    Public entry point to seed initial data if empty.
+
+def seed_database(app: Optional[Any] = None) -> None:
+    """Public idempotent entry point to populate initial demonstration records.
+
+    If worker records already exist, execution terminates safely without duplicating
+    records or disrupting existing transactions.
+
+    Args:
+        app (Optional[Flask], optional): Flask application instance. Defaults to None.
     """
     if Worker.query.first() is None:
         seed_initial_data()
 
-def seed_initial_data():
+
+def seed_initial_data() -> None:
+    """Populates realistic FMCG distribution datasets for Anupama Agencies.
+
+    Generates records for:
+    1. 5 Godown workers across driver, loader, dispatcher, and supervisor roles.
+    2. 3 Delivery vehicles (Everest van, Colgate maxi truck, city beat auto).
+    3. Daily attendance logs for the active month up to current date.
+    4. 5 Advance payment loans across cash, UPI, and bank transfer channels.
+    5. 4 Fuel expense receipts with odometer readings.
+    6. 3 Retail beat dispatch route runs.
+    7. 4 Damaged/expired stock claims with credit note valuations.
     """
-    Seeds realistic FMCG distribution data for Anupama Agencies.
-    """
-    today = date.today()
-    
+    today: date = date.today()
+
     # 1. Godown Workers
     w1 = Worker(
         name="Ramesh Kumar",
@@ -115,13 +151,10 @@ def seed_initial_data():
     db.session.commit()
 
     # 3. Attendance for the current month up to today (day 1 to day 16)
-    # We will seed realistic pattern
     workers = [w1, w2, w3, w4, w5]
     for d in range(1, min(today.day + 1, 28)):
         att_date = date(today.year, today.month, d)
         for idx, worker in enumerate(workers):
-            # Create a realistic variation: mostly Present, occasional half day, Sunday off or present
-            # Weekday check: if Sunday (weekday() == 6)
             if att_date.weekday() == 6:
                 status = "Paid Leave" if idx % 2 == 0 else "Present"
             elif d == 4 and idx == 1:
@@ -134,7 +167,7 @@ def seed_initial_data():
                 status = "Paid Leave"
             else:
                 status = "Present"
-            
+
             att = Attendance(
                 worker_id=worker.id,
                 date=att_date,
@@ -142,7 +175,7 @@ def seed_initial_data():
                 notes="Morning Shift Regular" if status == "Present" else f"Logged as {status}"
             )
             db.session.add(att)
-    
+
     db.session.commit()
 
     # 4. Advance Payments & Khata Ledger
