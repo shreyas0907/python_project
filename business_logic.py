@@ -1,18 +1,18 @@
 """
-Anupama Agencies — FMCG Distributor Management Portal
+Anupama Agencies — FMCG Distributor Management Portal 
 Central Business Logic & Data Processing Engine
 
 This module encapsulates all core distribution domain calculations, FEFO prioritization,
-attendance muster aggregations, advance khata reconciliations, wage settlements,
+attendance muster aggregations, advance khata reconciliations, wage settlements, 
 fleet fuel analytics, dispatch safety validations, and damage return valuations.
-
-Author: Anupama Agencies Engineering Team
-Distribution Scope: Everest Spices & Colgate-Palmolive (Authorized Regional Depot)
+ 
+Author: Anupama Agencies Engineering Team 
+Distribution Scope: Everest Spices & Colgate-Palmolive (Authorized Regional Depot) 
 """
 
 from datetime import datetime, date, timedelta
 from calendar import monthrange
-from typing import Dict, List, Optional, Union, Any, Tuple
+from typing import Dict, List, Optional, Union, Any, Tuple 
 import json
 import re
 
@@ -28,7 +28,7 @@ FMCG_CATALOG: Dict[str, List[str]] = {
         'Everest Pav Bhaji Masala 100g',
         'Everest Chaat Masala 100g',
         'Everest Chicken Masala 100g',
-        'Everest Turmeric Powder 200g',
+        'Everest Turmeric Powder 200g', 
         'Everest Coriander Powder 200g',
         'Everest Cumin Seeds (Jeera) 100g',
         'Everest Sambhar Masala 100g',
