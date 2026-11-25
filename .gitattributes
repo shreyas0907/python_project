@@ -1,0 +1,18 @@
+# GitHub Linguist language overrides
+# Vendored client-side distribution bundles and standalone SPA builds
+/app.js linguist-vendored
+/static/js/** linguist-vendored
+/netlify-deploy/** linguist-vendored
+
+# Root standalone SPA deployment build
+/index.html linguist-vendored
+
+# Large presentation templates
+/templates/dashboard.html linguist-vendored
+/templates/returns/index.html linguist-vendored
+/templates/workers/view.html linguist-vendored
+/templates/fuel/index.html linguist-vendored
+/templates/base.html linguist-vendored
+/templates/advances/index.html linguist-vendored
+/templates/dispatches/index.html linguist-vendored
+/templates/settlements/index.html linguist-vendored

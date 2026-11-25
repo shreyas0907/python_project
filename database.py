@@ -17,6 +17,13 @@ def init_db(app):
         if Worker.query.first() is None:
             seed_initial_data()
 
+def seed_database(app=None):
+    """
+    Public entry point to seed initial data if empty.
+    """
+    if Worker.query.first() is None:
+        seed_initial_data()
+
 def seed_initial_data():
     """
     Seeds realistic FMCG distribution data for Anupama Agencies.

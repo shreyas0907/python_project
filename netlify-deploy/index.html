@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anupama Agencies — FMCG Distributor Management Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        canvas: '#E2E4DC',
+                        surface: '#F8F9F6',
+                        cardBg: '#FFFFFF',
+                        charcoal: '#1E2421',
+                        muted: '#7A827E',
+                        borderSubtle: '#ECEEE8',
+                        sage: {
+                            50: '#F5F7F3',
+                            100: '#EFF2EC',
+                            200: '#DCE2D8',
+                            300: '#B8C6B1',
+                            400: '#8E9F86',
+                            500: '#687B60',
+                            600: '#466358', // Primary Deep Sage
+                            700: '#3A544A', // Dark Sage Hover
+                            800: '#2E433B',
+                            900: '#1E2421'  // Dark Charcoal
+                        },
+                        everest: {
+                            DEFAULT: '#C41E3A',
+                            dark: '#9E132A',
+                            light: '#FDF2F4',
+                            border: '#FCD8DF'
+                        },
+                        colgate: {
+                            DEFAULT: '#004B87',
+                            dark: '#003360',
+                            light: '#F0F5FA',
+                            border: '#D5E5F5'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Font: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QRCode.js CDN for Batch QR Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- HTML5-QRCode CDN for Live Camera Scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- SheetJS (xlsx) CDN for Multi-Sheet Excel Backup & Restore -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Soft-Minimalist Sage Green & Off-White Bento Styles -->
+    <style>
+        :root {
+            --bg-canvas: #E2E4DC;
+            --bg-surface: #F8F9F6;
+            --bg-card: #FFFFFF;
+            --text-charcoal: #1E2421;
+            --text-muted: #7A827E;
+            --accent-sage: #466358;
+            --accent-sage-dark: #3A544A;
+            --accent-sage-light: #EFF2EC;
+            --border-subtle: #ECEEE8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-canvas);
+            color: var(--text-charcoal);
+            overflow-x: hidden;
+        }
+
+        /* Bento Card Surfaces */
+        .glass-card {
+            background: #FFFFFF !important;
+            border: 1px solid #ECEEE8 !important;
+            border-radius: 24px !important;
+            box-shadow: 0 4px 20px -2px rgba(30, 36, 33, 0.03) !important;
+            color: #1E2421 !important;
+        }
+
+        /* Ensure readable dark charcoal typography inside glass-cards across all views */
+        .glass-card h1:not([class*="bg-"]):not(.keep-white),
+        .glass-card h2:not([class*="bg-"]):not(.keep-white),
+        .glass-card h3:not([class*="bg-"]):not(.keep-white),
+        .glass-card h4:not([class*="bg-"]):not(.keep-white),
+        .glass-card h5:not([class*="bg-"]):not(.keep-white),
+        .glass-card h6:not([class*="bg-"]):not(.keep-white) {
+            color: #1E2421 !important;
+        }
+
+        .glass-card .text-white:not(button):not(button *):not([class*="bg-[#466358]"]):not([class*="bg-[#1E2421]"]):not([class*="bg-[#3A544A]"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-blue"]):not([class*="bg-cyan"]):not([class*="bg-amber"]):not(.keep-white) {
+            color: #1E2421 !important;
+        }
+
+        .glass-card .text-slate-400 {
+            color: #7A827E !important;
+        }
+
+        .glass-card .text-slate-300 {
+            color: #4A5550 !important;
+        }
+
+        .glass-card .text-slate-200 {
+            color: #1E2421 !important;
+        }
+
+        .glass-card .border-white\/10,
+        .glass-card .border-white\/\[0\.06\],
+        .glass-card .border-white\/\[0\.07\],
+        .glass-card .border-white\/\[0\.08\] {
+            border-color: #ECEEE8 !important;
+        }
+
+        .glass-card .bg-white\/\[0\.02\],
+        .glass-card .bg-white\/\[0\.04\],
+        .glass-card .bg-white\/\[0\.06\],
+        .glass-card .bg-white\/\[0\.08\] {
+            background-color: #EFF2EC !important;
+        }
+
+        .glass-card .divide-white\/\[0\.06\] > :not([hidden]) ~ :not([hidden]),
+        .glass-card .divide-white\/\[0\.07\] > :not([hidden]) ~ :not([hidden]) {
+            border-color: #ECEEE8 !important;
+        }
+
+        /* Clean Table Styling */
+        table th {
+            background-color: #EFF2EC !important;
+            color: #466358 !important;
+            font-weight: 700 !important;
+            border-bottom: 1px solid #ECEEE8 !important;
+        }
+        table tr {
+            border-bottom: 1px solid #ECEEE8 !important;
+        }
+        table tbody tr:hover {
+            background-color: #F8F9F6 !important;
+        }
+
+        .glass-panel {
+            background: #FFFFFF !important;
+            border: 1px solid #ECEEE8 !important;
+            color: #1E2421 !important;
+        }
+
+        .glass-pill {
+            background: #EFF2EC !important;
+            border: 1px solid #DCE2D8 !important;
+            color: #466358 !important;
+        }
+
+        .card-hover {
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            border-color: #B8C6B1 !important;
+            box-shadow: 0 12px 30px -4px rgba(30, 36, 33, 0.06) !important;
+        }
+
+        /* Universal Clean Inputs, Selects, and Textareas */
+        input[type="text"], input[type="password"], input[type="number"], input[type="date"], select, textarea {
+            background-color: #FFFFFF !important;
+            color: #1E2421 !important;
+            border: 1px solid #ECEEE8 !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #A0A7A2 !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #466358 !important;
+            box-shadow: 0 0 0 3px rgba(70, 99, 88, 0.12) !important;
+            outline: none !important;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #E2E4DC; }
+        ::-webkit-scrollbar-thumb { background: #CBD3C8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #466358; }
+
+        /* Floating Tooltip */
+        .rail-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            transform: translateX(-4px);
+        }
+        .rail-item:hover .rail-tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @media print {
+            body { background: #FFFFFF !important; color: #000000 !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            #voucher-view { display: block !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .voucher-container { box-shadow: none !important; border: 1px solid #94A3B8 !important; }
+            #stock-label-print-area { display: flex !important; justify-content: center !important; align-items: center !important; padding: 10px !important; margin: 0 auto !important; width: 100% !important; }
+            .crate-print-card { border: 3px solid #000 !important; color: #000 !important; background: #fff !important; page-break-inside: avoid !important; }
+        }
+    </style>
+</head>
+<body class="bg-[#E2E4DC] text-[#1E2421] antialiased min-h-screen p-3 sm:p-4 lg:p-6 flex flex-col justify-between selection:bg-[#466358]/20 selection:text-[#1E2421]">
+
+    <!-- Outer Canvas Wrapper with Generous Margins -->
+    <div class="max-w-[1680px] w-full mx-auto flex flex-1 gap-4 sm:gap-5 relative items-start">
+        
+        <!-- Mobile Navigation Backdrop -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity"></div>
+
+        <!-- 1. FLOATING LEFT ICON RAIL (Sleek Vertical White Pill Rail: 68px width, 34px radius) -->
+        <aside id="app-sidebar" class="no-print hidden lg:flex flex-col items-center justify-between w-[68px] bg-white rounded-[34px] border border-[#ECEEE8] py-5 shadow-[0_4px_24px_rgba(30,36,33,0.06)] sticky top-6 h-[calc(100vh-48px)] flex-shrink-0 z-30">
+            <!-- Top Section: Brand Emblem + Core Modules -->
+            <div class="flex flex-col items-center space-y-3 w-full">
+                <!-- Top Brand Emblem -->
+                <div class="w-11 h-11 rounded-full bg-[#1E2421] text-white flex items-center justify-center font-black text-sm tracking-tight shadow-sm select-none cursor-pointer" onclick="switchView('dashboard')" title="Anupama Agencies">
+                    AA
+                </div>
+
+                <div class="w-8 h-[1px] bg-[#ECEEE8] my-1"></div>
+
+                <!-- Navigation Outline Icons with Hover Tooltips -->
+                <nav class="flex flex-col items-center space-y-2 w-full">
+                    <!-- Dashboard -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all bg-[#466358] text-white shadow-md">
+                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Dashboard
+                        </div>
+                    </div>
+
+                    <!-- Godown Staff -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('workers')" id="nav-workers" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Godown Staff & Profiles
+                        </div>
+                    </div>
+
+                    <!-- Daily Attendance -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('attendance')" id="nav-attendance" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Daily Attendance Register
+                        </div>
+                    </div>
+
+                    <!-- Monthly Muster Roll -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('monthly-attendance')" id="nav-monthly-attendance" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Monthly Muster Roll
+                        </div>
+                    </div>
+
+                    <!-- Advance Khata Ledger -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('advances')" id="nav-advances" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="wallet" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Advance Khata Ledger
+                        </div>
+                    </div>
+
+                    <!-- Salary & Settlements -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('settlements')" id="nav-settlements" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="calculator" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Salary & Advance Settlements
+                        </div>
+                    </div>
+
+                    <!-- Vehicle Fuel Tracker -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('fuel')" id="nav-fuel" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="fuel" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Fleet Fuel & Expense Tracker
+                        </div>
+                    </div>
+
+                    <!-- Daily Beat Dispatch -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('dispatches')" id="nav-dispatches" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="truck" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Daily Beat Dispatches
+                        </div>
+                    </div>
+
+                    <!-- Stock & Expiry QR (FEFO) -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('stock-qr')" id="nav-stock-qr" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC] relative">
+                            <i data-lucide="qr-code" class="w-5 h-5 text-[#466358]"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#466358]"></span>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Stock Batch & Expiry QR (FEFO)
+                        </div>
+                    </div>
+
+                    <!-- Damaged & Expiry Returns -->
+                    <div class="relative rail-item flex items-center">
+                        <button onclick="switchView('returns')" id="nav-returns" class="nav-item w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                            <i data-lucide="package-x" class="w-5 h-5"></i>
+                        </button>
+                        <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                            Damaged & Expiry Returns Register
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Bottom Section: Backup & Security -->
+            <div class="flex flex-col items-center space-y-2.5 w-full pt-3 border-t border-[#ECEEE8]">
+                <!-- Backup & Sync -->
+                <div class="relative rail-item flex items-center">
+                    <button onclick="openModal('backup-modal')" id="nav-backup" class="w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-[#466358] hover:bg-[#EFF2EC]">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </button>
+                    <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                        Data Storage & Cloud Sync (Excel & Firebase)
+                    </div>
+                </div>
+
+                <!-- Lock Portal PIN -->
+                <div class="relative rail-item flex items-center">
+                    <button onclick="lockPortal()" class="w-11 h-11 rounded-full flex items-center justify-center transition-all text-[#7A827E] hover:text-amber-600 hover:bg-amber-50" title="Lock Portal with PIN">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                    </button>
+                    <div class="rail-tooltip pointer-events-none absolute left-full ml-3 px-3 py-1.5 bg-[#1E2421] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl z-50">
+                        Lock Agency Portal
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Off-Canvas Drawer (Shown only on small screens when opened) -->
+        <div id="mobile-drawer" class="no-print fixed inset-y-0 left-0 w-72 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl flex flex-col justify-between p-5 border-r border-[#ECEEE8] lg:hidden">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b border-[#ECEEE8]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-[#1E2421] text-white flex items-center justify-center font-black text-sm">
+                            AA
+                        </div>
+                        <div>
+                            <h2 class="font-extrabold text-sm text-[#1E2421]">Anupama Agencies</h2>
+                            <p class="text-[11px] text-[#7A827E]">Everest & Colgate Depot</p>
+                        </div>
+                    </div>
+                    <button id="mobile-drawer-close" class="p-1.5 text-[#7A827E] hover:text-[#1E2421] rounded-lg">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="mt-4 space-y-1 text-xs font-bold">
+                    <button onclick="switchView('dashboard')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="layout-dashboard" class="w-4 h-4 text-[#466358]"></i>Dashboard</button>
+                    <button onclick="switchView('workers')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="users" class="w-4 h-4 text-[#466358]"></i>Godown Staff</button>
+                    <button onclick="switchView('attendance')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="clipboard-check" class="w-4 h-4 text-[#466358]"></i>Daily Attendance</button>
+                    <button onclick="switchView('monthly-attendance')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="calendar-days" class="w-4 h-4 text-[#466358]"></i>Monthly Muster</button>
+                    <button onclick="switchView('advances')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="wallet" class="w-4 h-4 text-[#466358]"></i>Advance Khata</button>
+                    <button onclick="switchView('settlements')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="calculator" class="w-4 h-4 text-[#466358]"></i>Salary Settlements</button>
+                    <button onclick="switchView('fuel')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="fuel" class="w-4 h-4 text-[#466358]"></i>Fleet Fuel Tracker</button>
+                    <button onclick="switchView('dispatches')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="truck" class="w-4 h-4 text-[#466358]"></i>Beat Dispatches</button>
+                    <button onclick="switchView('stock-qr')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="qr-code" class="w-4 h-4 text-[#466358]"></i>Stock & Expiry QR</button>
+                    <button onclick="switchView('returns')" class="w-full text-left py-2.5 px-3 rounded-xl flex items-center gap-3 text-[#1E2421] hover:bg-[#EFF2EC]"><i data-lucide="package-x" class="w-4 h-4 text-[#466358]"></i>Damaged Returns</button>
+                </div>
+            </div>
+            <div class="pt-4 border-t border-[#ECEEE8] space-y-2">
+                <button onclick="openModal('backup-modal')" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-[#466358] flex items-center justify-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span>Backup / Restore (.xlsx)</span>
+                </button>
+                <button onclick="lockPortal()" class="w-full py-2 px-3 rounded-xl text-xs font-bold text-[#7A827E] hover:text-[#1E2421] bg-[#EFF2EC] flex items-center justify-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4 text-amber-600"></i>
+                    <span>Lock Portal</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. MAIN BENTO DASHBOARD CONTAINER (Crisp Off-White: #F8F9F6 with 28px/32px rounded corners) -->
+        <div class="flex-1 bg-[#F8F9F6] border border-[#ECEEE8] rounded-[28px] sm:rounded-[32px] shadow-[0_10px_35px_rgba(30,36,33,0.03)] flex flex-col min-w-0 overflow-hidden">
+            
+            <!-- TOP HEADER BAR -->
+            <header class="no-print bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-[#ECEEE8] px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <!-- Left: Greeting & Distributor Subtitle -->
+                <div class="flex items-center gap-3">
+                    <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-xl text-[#7A827E] hover:text-[#1E2421] hover:bg-[#EFF2EC]">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-black text-[#1E2421] tracking-tight leading-snug">
+                            Welcome, Anupama Agencies!
+                        </h1>
+                        <p class="text-xs text-[#7A827E] font-medium">
+                            Authorized Distributor • <strong class="text-[#C41E3A]">Everest Spices</strong> & <strong class="text-[#004B87]">Colgate-Palmolive</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Pill Search & Clean Circular Action Badges -->
+                <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap self-end sm:self-auto">
+                    <!-- Pill-Shaped Search Input -->
+                    <div class="relative flex items-center bg-white border border-[#ECEEE8] rounded-full pl-3.5 pr-1.5 py-1.5 shadow-sm">
+                        <input type="text" id="global-search-input" placeholder="Search staff, fuel, batches..." 
+                            class="text-xs text-[#1E2421] placeholder-[#A0A7A2] outline-none bg-transparent w-36 sm:w-52 pr-2">
+                        <button class="w-7 h-7 rounded-full bg-[#1E2421] text-white flex items-center justify-center flex-shrink-0 hover:bg-[#3A544A] transition-colors" title="Search">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+
+                    <!-- Near-Expiry Alert Circular Button -->
+                    <button onclick="switchView('stock-qr')" class="w-9 h-9 rounded-full bg-white border border-[#ECEEE8] text-[#7A827E] hover:text-[#1E2421] hover:border-[#B8C6B1] flex items-center justify-center relative shadow-sm transition-all" title="FEFO Near-Expiry Alerts">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                        <span id="header-alert-ping" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    </button>
+
+                    <!-- Quick QR Scan Circular Button -->
+                    <button onclick="switchView('stock-qr'); stockQrActiveTab = 'scanner'; renderStockQRView();" class="w-9 h-9 rounded-full bg-[#EFF2EC] border border-[#DCE2D8] text-[#466358] hover:bg-[#466358] hover:text-white flex items-center justify-center shadow-sm transition-all" title="Quick Scan Batch QR">
+                        <i data-lucide="scan-line" class="w-4 h-4"></i>
+                    </button>
+
+                    <!-- Backup / Sync Modal Button -->
+                    <button onclick="openModal('backup-modal')" class="w-9 h-9 rounded-full bg-white border border-[#ECEEE8] text-[#7A827E] hover:text-[#466358] hover:border-[#DCE2D8] flex items-center justify-center shadow-sm transition-all" title="Excel Backup & Firebase Sync">
+                        <i data-lucide="database" class="w-4 h-4"></i>
+                    </button>
+
+                    <!-- System Date Pill -->
+                    <div class="hidden xl:flex items-center gap-1.5 text-xs font-semibold text-[#7A827E] bg-white border border-[#ECEEE8] px-3 py-1.5 rounded-full shadow-sm">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#466358]"></i>
+                        <span id="current-date-badge"></span>
+                    </div>
+
+                    <!-- Lock Portal Button -->
+                    <button onclick="lockPortal()" class="w-9 h-9 rounded-full bg-white border border-[#ECEEE8] text-[#7A827E] hover:text-amber-600 hover:border-amber-200 flex items-center justify-center shadow-sm transition-all" title="Lock Portal with PIN">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                    </button>
+
+                    <!-- Admin Profile Avatar Pill -->
+                    <div class="flex items-center gap-2 pl-2 border-l border-[#ECEEE8]">
+                        <div class="w-8 h-8 rounded-full bg-[#466358] text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                            AA
+                        </div>
+                        <div class="hidden md:block text-left">
+                            <span class="text-xs font-bold text-[#1E2421] block leading-none">Anupama Admin</span>
+                            <span class="text-[10px] text-[#7A827E] font-medium">Depot Manager</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Toast Container -->
+            <div id="toast-container" class="no-print fixed top-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+            <!-- Page Specific Views Container -->
+            <main class="flex-1 p-4 sm:p-6 lg:p-7 w-full max-w-7xl mx-auto space-y-6">
+                <!-- 1. DASHBOARD VIEW (Bento Grid) -->
+                <div id="view-dashboard" class="app-view space-y-6"></div>
+
+                <!-- 2. WORKERS VIEW -->
+                <div id="view-workers" class="app-view space-y-6 hidden"></div>
+
+                <!-- 3. DAILY ATTENDANCE VIEW -->
+                <div id="view-attendance" class="app-view space-y-6 hidden"></div>
+
+                <!-- 4. MONTHLY ATTENDANCE VIEW -->
+                <div id="view-monthly-attendance" class="app-view space-y-6 hidden"></div>
+
+                <!-- 5. ADVANCES VIEW -->
+                <div id="view-advances" class="app-view space-y-6 hidden"></div>
+
+                <!-- 6. FUEL VIEW -->
+                <div id="view-fuel" class="app-view space-y-6 hidden"></div>
+
+                <!-- 7. DISPATCHES VIEW -->
+                <div id="view-dispatches" class="app-view space-y-6 hidden"></div>
+
+                <!-- 8. RETURNS VIEW -->
+                <div id="view-returns" class="app-view space-y-6 hidden"></div>
+
+                <!-- 9. SETTLEMENTS VIEW -->
+                <div id="view-settlements" class="app-view space-y-6 hidden"></div>
+
+                <!-- 10. PRINTABLE VOUCHER VIEW -->
+                <div id="view-voucher" class="app-view space-y-6 hidden"></div>
+
+                <!-- 11. STOCK BATCH & EXPIRY QR MODULE VIEW -->
+                <div id="view-stock-qr" class="app-view space-y-6 hidden"></div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="no-print bg-white/70 border-t border-[#ECEEE8] py-4 px-6 mt-auto">
+                <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-[#7A827E] gap-2">
+                    <p>© <span id="footer-year">2026</span> <strong class="text-[#1E2421]">Anupama Agencies</strong> • FMCG Distributor for Everest Spices & Colgate-Palmolive</p>
+                    <p class="flex items-center gap-1.5 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-[#466358] inline-block"></span>
+                        <span id="cloud-sync-status" class="text-[#466358] font-bold">Cloud Synced (Firebase)</span>
+                    </p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- MODAL: Image Preview (Receipts & Worker Photos) -->
+    <div id="image-preview-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#ECEEE8]">
+            <div class="p-4 border-b border-[#ECEEE8] flex items-center justify-between bg-[#F8F9F6]">
+                <h3 id="modal-preview-caption" class="text-sm font-bold text-[#1E2421]">Preview</h3>
+                <button onclick="closeModal('image-preview-modal')" class="p-1.5 text-[#7A827E] hover:text-[#1E2421] rounded-xl hover:bg-[#EFF2EC] transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-4 flex items-center justify-center bg-[#F8F9F6]/50">
+                <img id="modal-preview-img" src="" alt="Preview" class="max-h-[70vh] rounded-2xl shadow-sm object-contain border border-[#ECEEE8]">
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Data Storage & Cloud Sync (Excel & Firebase) -->
+    <div id="backup-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-[#ECEEE8]">
+            <div class="p-5 border-b border-[#ECEEE8] flex items-center justify-between bg-[#F8F9F6]">
+                <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-[#EFF2EC] text-[#466358] border border-[#DCE2D8] flex items-center justify-center">
+                        <i data-lucide="database" class="w-4 h-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-bold text-[#1E2421]">Data Storage & Cloud Sync</h3>
+                        <p class="text-[11px] text-[#7A827E]">Firebase Realtime & Excel (.xlsx)</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('backup-modal')" class="p-1.5 text-[#7A827E] hover:text-[#1E2421] rounded-xl hover:bg-[#EFF2EC] transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Local Storage Safety Card -->
+                <div class="p-3.5 rounded-2xl bg-[#EFF2EC] border border-[#DCE2D8] text-[#466358] flex items-start gap-3">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-[#466358] flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <p class="font-bold text-[#1E2421]">Permanent Browser Storage Active</p>
+                        <p class="text-[11px] text-[#7A827E] mt-0.5">Worker profiles, muster attendance, fuel logs, and advances are saved locally in your browser with zero data loss.</p>
+                    </div>
+                </div>
+
+                <!-- Real-Time Multi-Device Cloud Sync Card -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9F6] border border-[#ECEEE8] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-[#1E2421]">Multi-Device Cloud Sync</span>
+                        <i data-lucide="cloud" class="w-4 h-4 text-[#466358]"></i>
+                    </div>
+                    <p class="text-[11px] text-[#7A827E]">Live multi-device database sync via Firebase Realtime Database at <code class="text-[10px] bg-white text-[#466358] px-1.5 py-0.5 rounded font-mono border border-[#ECEEE8]">agencies/anupama_agencies/db</code>.</p>
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#ECEEE8] text-xs">
+                        <span class="font-medium text-[#7A827E]">Cloud Status:</span>
+                        <span id="modal-sync-badge" class="font-bold text-[#466358]">🟢 Cloud Connected (Firebase)</span>
+                    </div>
+                </div>
+
+                <!-- Export Backup File -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9F6] border border-[#ECEEE8] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-[#1E2421]">Export Complete Backup (Excel)</span>
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#466358]"></i>
+                    </div>
+                    <p class="text-[11px] text-[#7A827E]">Download a multi-sheet Excel (.xlsx) workbook of Workers, Attendance, Advances, Fuel, Dispatches, Damaged Returns, and Stock QR Batches.</p>
+                    <button onclick="downloadBackupExcel()" class="w-full py-2.5 bg-[#466358] hover:bg-[#3A544A] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-white"></i>
+                        <span>Download Excel Backup (.xlsx)</span>
+                    </button>
+                </div>
+
+                <!-- Restore Backup File -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9F6] border border-[#ECEEE8] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-[#1E2421]">Restore Data from Backup</span>
+                        <i data-lucide="upload-cloud" class="w-4 h-4 text-[#466358]"></i>
+                    </div>
+                    <p class="text-[11px] text-[#7A827E]">Restore your records from a previously downloaded Excel (.xlsx) backup file.</p>
+                    <input type="file" id="restore-file-input" accept=".xlsx, .xls, .json" class="w-full text-xs text-[#7A827E] file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EFF2EC] file:text-[#466358] hover:file:bg-[#E4E9E2]">
+                    <button onclick="restoreBackupFromFile()" class="w-full py-2.5 bg-[#1E2421] hover:bg-[#3A544A] text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Restore Data</span>
+                    </button>
+                </div>
+
+                <!-- Reset to Seed Data -->
+                <div class="pt-2 border-t border-[#ECEEE8] flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-[#1E2421] block">Factory Default</span>
+                        <span class="text-[10px] text-[#7A827E]">Reverts to initial sample dataset</span>
+                    </div>
+                    <button onclick="confirmResetToSeed()" class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl font-bold transition-colors">
+                        Reset Default
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINTABLE CRATE STICKER LABEL AREA (Printed only when window.print() is called for label) -->
+    <div id="stock-label-print-area" class="print-only hidden"></div>
+    <!-- Hidden container for image QR code scanner decoding -->
+    <div id="qr-reader-temp" class="hidden"></div>
+
+    <!-- MODAL: Crate Sticker Label Preview & Print -->
+    <div id="stock-label-modal" class="no-print fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#ECEEE8]">
+            <div class="p-4 border-b border-[#ECEEE8] flex items-center justify-between bg-[#F8F9F6]">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-[#EFF2EC] text-[#466358] border border-[#DCE2D8] flex items-center justify-center">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-sm font-bold text-[#1E2421]">Print Crate QR Label</h3>
+                </div>
+                <button onclick="closeModal('stock-label-modal')" class="p-1.5 text-[#7A827E] hover:text-[#1E2421] rounded-xl hover:bg-[#EFF2EC] transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="stock-label-modal-content" class="p-6 flex flex-col items-center justify-center bg-[#F8F9F6]/40">
+                <!-- Live label preview injected here -->
+            </div>
+            <div class="p-4 border-t border-[#ECEEE8] bg-[#F8F9F6] flex items-center justify-end gap-3">
+                <button onclick="closeModal('stock-label-modal')" class="px-4 py-2 text-xs font-semibold text-[#7A827E] hover:text-[#1E2421] rounded-xl transition-colors">
+                    Close
+                </button>
+                <button onclick="triggerCrateLabelPrint()" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#466358] hover:bg-[#3A544A] shadow-sm flex items-center gap-2 transition-all">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span>Print Crate Sticker (1-Click)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Scanned Crate Verification & Details -->
+    <div id="scanned-crate-modal" class="no-print fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#ECEEE8]">
+            <div class="p-4 border-b border-[#ECEEE8] flex items-center justify-between bg-[#F8F9F6]">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-[#EFF2EC] text-[#466358] border border-[#DCE2D8] flex items-center justify-center">
+                        <i data-lucide="scan-line" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-sm font-bold text-[#1E2421]">Scanned Crate Verification</h3>
+                </div>
+                <button onclick="closeModal('scanned-crate-modal')" class="p-1.5 text-[#7A827E] hover:text-[#1E2421] rounded-xl hover:bg-[#EFF2EC] transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="scanned-crate-modal-content" class="p-5 sm:p-6 bg-[#F8F9F6]">
+                <!-- Live scanned crate verification card injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Delete / Remove Vehicle Confirmation -->
+    <div id="delete-vehicle-modal" class="no-print fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-[#ECEEE8] animate-in fade-in duration-200">
+            <div class="p-5 border-b border-[#ECEEE8] flex items-center justify-between bg-[#F8F9F6]">
+                <div class="flex items-center gap-3">
+                    <span id="delete-veh-icon-wrap" class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/60 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </span>
+                    <div>
+                        <h3 id="delete-veh-modal-title" class="text-sm font-bold text-[#1E2421]">Remove Vehicle</h3>
+                        <p class="text-[11px] text-[#7A827E]">Delivery Fleet Management</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('delete-vehicle-modal')" class="p-1.5 text-[#7A827E] hover:text-[#1E2421] rounded-xl hover:bg-[#EFF2EC] transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div id="delete-veh-modal-body" class="p-6 space-y-4 text-xs">
+                <!-- Injected via promptDeleteVehicle(id) -->
+            </div>
+            
+            <div id="delete-veh-modal-footer" class="p-4 border-t border-[#ECEEE8] bg-[#F8F9F6] flex items-center justify-end gap-2.5">
+                <!-- Action buttons injected via promptDeleteVehicle(id) -->
+            </div>
+        </div>
+    </div>
+
+    <!-- STARTUP 4-DIGIT AGENCY PIN LOCK MODAL (Soft Sage Bento Style) -->
+    <div id="pin-lock-modal" class="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white border border-[#ECEEE8] rounded-3xl max-w-sm w-full p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
+            <!-- Brand emblem -->
+            <div class="w-16 h-16 rounded-2xl bg-[#466358] text-white p-1 shadow-md mx-auto mb-4 flex items-center justify-center font-black text-2xl">
+                AA
+            </div>
+
+            <h2 class="text-xl font-black text-[#1E2421] tracking-tight">Anupama Agencies</h2>
+            <p class="text-xs text-[#7A827E] mt-1 font-medium">FMCG Distribution Portal • Everest & Colgate</p>
+
+            <div class="mt-6 p-3 rounded-2xl bg-[#EFF2EC] border border-[#DCE2D8] text-xs text-[#466358] flex items-center justify-center gap-2 font-bold">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+                <span>Enter 4-Digit Agency Security PIN</span>
+            </div>
+
+            <form id="pin-lock-form" onsubmit="handlePinSubmit(event)" class="mt-6 space-y-4">
+                <div>
+                    <input type="password" id="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off" autofocus
+                        class="w-48 mx-auto text-center text-3xl font-mono tracking-[0.5em] py-3 px-4 bg-[#F8F9F6] text-[#1E2421] rounded-2xl border border-[#ECEEE8] focus:border-[#466358] focus:ring-2 focus:ring-[#466358]/20 focus:outline-none transition-all placeholder:tracking-normal placeholder:text-[#A0A7A2]">
+                </div>
+
+                <div id="pin-error-msg" class="text-xs text-rose-600 font-semibold min-h-[1.25rem] hidden">
+                    Incorrect PIN. Please try again.
+                </div>
+
+                <button type="submit" class="w-full py-3.5 px-4 rounded-2xl font-bold text-sm text-white bg-[#466358] hover:bg-[#3A544A] transition-all shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="key-round" class="w-4 h-4"></i>
+                    <span>Unlock Portal</span>
+                </button>
+            </form>
+
+            <div class="mt-5 text-[11px] text-[#7A827E]">
+                Default PIN: <strong class="text-[#1E2421]">2610</strong> • Session Protected
+            </div>
+        </div>
+    </div>
+    <script>
+        // Prevent flashing of PIN lock screen if already unlocked in this session
+        if (sessionStorage.getItem('anupama_agency_pin_unlocked') === 'true') {
+            const pinModal = document.getElementById('pin-lock-modal');
+            if (pinModal) pinModal.classList.add('hidden');
+        }
+
+        // Mobile drawer event handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const drawer = document.getElementById('mobile-drawer');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const closeBtn = document.getElementById('mobile-drawer-close');
+
+            if (menuBtn && drawer && backdrop) {
+                menuBtn.addEventListener('click', () => {
+                    drawer.classList.remove('-translate-x-full');
+                    backdrop.classList.remove('hidden');
+                });
+            }
+            if (closeBtn && drawer && backdrop) {
+                closeBtn.addEventListener('click', () => {
+                    drawer.classList.add('-translate-x-full');
+                    backdrop.classList.add('hidden');
+                });
+            }
+            if (backdrop && drawer) {
+                backdrop.addEventListener('click', () => {
+                    drawer.classList.add('-translate-x-full');
+                    backdrop.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+
+    <!-- FIREBASE REALTIME DATABASE SDK (CDN) & CONFIGURATION BLOCK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+    <script>
+        window.firebaseConfig = {
+            apiKey: "AIzaSyBST4yN6F-JWVZPy1AFbIzXajA1vbNyFGs",
+            authDomain: "anupama-agencies.firebaseapp.com",
+            databaseURL: "https://anupama-agencies-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "anupama-agencies",
+            storageBucket: "anupama-agencies.firebasestorage.app",
+            messagingSenderId: "777355768671",
+            appId: "1:777355768671:web:609c3c3d8cf8e62c2e3cea"
+        };
+    </script>
+
+    <!-- Core Application Logic Script -->
+    <script src="static/js/app.js"></script>
+    <script>
+        if (typeof StorageManager === 'undefined') {
+            document.write('<script src="app.js"><\/script>');
+        }
+    </script>
+</body>
+</html>

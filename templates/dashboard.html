@@ -324,22 +324,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataValues = {{ monthly_fuel_data | tojson }};
 
         new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
                     label: 'Fuel Expense (₹)',
                     data: dataValues,
-                    borderColor: '#004B87',
-                    backgroundColor: 'rgba(0, 75, 135, 0.08)',
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.35,
-                    pointBackgroundColor: '#C41E3A',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                    hoverBackgroundColor: '#22D3EE',
+                    borderColor: '#06B6D4',
+                    borderWidth: 1.5,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 45
                 }]
             },
             options: {

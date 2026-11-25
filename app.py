@@ -4,7 +4,12 @@ from calendar import monthrange
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from models import db, Worker, Attendance, Advance, Vehicle, FuelExpense, DispatchBeat, DamagedReturn, SalarySettlement
 from database import init_db
-from utils import format_inr, save_uploaded_file, export_csv_response
+from utils import (
+    format_inr, save_uploaded_file, export_csv_response,
+    FEFOEngine, AttendanceEngine, KhataEngine, PayrollEngine,
+    FleetAnalyticsEngine, DispatchEngine, DamageClaimsEngine,
+    BackupEngine, FMCG_CATALOG
+)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'anupama-agencies-fmcg-distributor-secret-2026')
@@ -552,6 +557,22 @@ def add_vehicle():
     return redirect(url_for('vehicles_registry'))
 
 
+@app.route('/fuel/vehicles/delete/<int:vehicle_id>', methods=['POST'])
+def delete_vehicle(vehicle_id):
+    veh = Vehicle.query.get_or_404(vehicle_id)
+    # Check if vehicle has any active route currently DISPATCHED
+    active_beat = DispatchBeat.query.filter_by(vehicle_id=vehicle_id, status='Dispatched').first()
+    if active_beat:
+        flash(f"Cannot remove vehicle '{veh.vehicle_number}': Currently assigned to an active route '{active_beat.beat_name}' with status 'DISPATCHED'.", 'error')
+        return redirect(url_for('vehicles_registry'))
+    
+    veh_number = veh.vehicle_number
+    db.session.delete(veh)
+    db.session.commit()
+    flash(f"Vehicle '{veh_number}' removed successfully!", 'success')
+    return redirect(url_for('vehicles_registry'))
+
+
 # -------------------------------------------------------------------
 # 6. FMCG DAILY DELIVERY / BEAT DISPATCH TRACKER
 # -------------------------------------------------------------------
@@ -961,6 +982,112 @@ def export_returns_csv():
             r.notes or ''
         ])
     return export_csv_response('Anupama_Agencies_Damaged_Expiry_Returns.csv', headers, rows)
+
+
+# -------------------------------------------------------------------
+# BUSINESS LOGIC & DATA PROCESSING API ENDPOINTS
+# -------------------------------------------------------------------
+@app.route('/api/fefo/analyze', methods=['GET', 'POST'])
+def api_fefo_analyze():
+    """
+    Analyzes stock batches using the backend FEFOEngine.
+    Computes shelf life percentages, expiry thresholds, and priority dispatch ranking.
+    """
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        batches = data.get('batches', [])
+    else:
+        # Default sample query
+        batches = [
+            {'brand': 'Everest Spices', 'product': 'Everest Garam Masala 100g', 'batch': 'EV-GM-2610A', 'exp': '2027-05-18', 'qty': 45},
+            {'brand': 'Colgate-Palmolive', 'product': 'Colgate MaxFresh Blue Gel 150g', 'batch': 'CP-MF-8831B', 'exp': '2026-12-15', 'qty': 30}
+        ]
+    ranked = FEFOEngine.rank_batches_fefo(batches)
+    return jsonify({
+        'status': 'success',
+        'count': len(ranked),
+        'ranked_batches': ranked
+    })
+
+
+@app.route('/api/attendance/summary/<int:worker_id>')
+def api_attendance_summary(worker_id):
+    """
+    Computes attendance metrics, effective payable days, and muster stats for a worker.
+    """
+    worker = Worker.query.get_or_404(worker_id)
+    year = request.args.get('year', date.today().year, type=int)
+    month = request.args.get('month', date.today().month, type=int)
+
+    attendances = Attendance.query.filter(
+        Attendance.worker_id == worker_id,
+        db.extract('year', Attendance.date) == year,
+        db.extract('month', Attendance.date) == month
+    ).all()
+
+    summary = AttendanceEngine.calculate_worker_summary(attendances)
+    pending_adv = KhataEngine.get_pending_advances_total(worker.advances)
+
+    return jsonify({
+        'status': 'success',
+        'worker_id': worker.id,
+        'worker_name': worker.name,
+        'year': year,
+        'month': month,
+        'attendance_summary': summary,
+        'pending_advances': pending_adv
+    })
+
+
+@app.route('/api/fuel/analytics')
+def api_fuel_analytics():
+    """
+    Computes fleet fuel expenditure trends and 6-month historical Chart.js data.
+    """
+    all_expenses = FuelExpense.query.all()
+    today = date.today()
+    chart_data = FleetAnalyticsEngine.generate_fuel_chart_data(all_expenses, num_months=6, end_date=today)
+    cur_stats = FleetAnalyticsEngine.calculate_monthly_fuel_stats(all_expenses, today.year, today.month)
+    
+    prev_m = 12 if today.month == 1 else today.month - 1
+    prev_y = today.year - 1 if today.month == 1 else today.year
+    prev_stats = FleetAnalyticsEngine.calculate_monthly_fuel_stats(all_expenses, prev_y, prev_m)
+    trend = FleetAnalyticsEngine.calculate_mom_fuel_trend(cur_stats['total_spent'], prev_stats['total_spent'])
+
+    return jsonify({
+        'status': 'success',
+        'current_month': cur_stats,
+        'previous_month': prev_stats,
+        'trend': trend,
+        'chart_data': chart_data
+    })
+
+
+@app.route('/api/dispatches/metrics')
+def api_dispatches_metrics():
+    """
+    Computes daily dispatch metrics (Everest crates, Colgate cartons, active routes).
+    """
+    target_date = request.args.get('date', date.today().strftime('%Y-%m-%d'))
+    all_dispatches = DispatchBeat.query.all()
+    metrics = DispatchEngine.calculate_daily_dispatch_metrics(all_dispatches, target_date)
+    return jsonify({
+        'status': 'success',
+        'metrics': metrics
+    })
+
+
+@app.route('/api/returns/summary')
+def api_returns_summary():
+    """
+    Computes damaged & expiry claims valuation and brand breakdown.
+    """
+    all_returns = DamagedReturn.query.all()
+    summary = DamageClaimsEngine.calculate_claims_summary(all_returns)
+    return jsonify({
+        'status': 'success',
+        'claims_summary': summary
+    })
 
 
 if __name__ == '__main__':

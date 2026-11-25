@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases
+*.sqlite3
+# Explicitly retain database files
+!anupama_agencies.db
+!instance/
+!instance/anupama_agencies.db
+
+# Deployment and configuration (explicitly preserved)
+!_redirects
+!netlify.toml
+!gunicorn.conf.py
+
+# Virtual environments
+venv/
+.venv/
+.venv*/
+env/
+
+# Uploaded media (keep folder structure with .gitkeep)
+static/uploads/receipts/*
+!static/uploads/receipts/.gitkeep
+static/uploads/workers/*
+!static/uploads/workers/.gitkeep
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary & system files
+.DS_Store
+Thumbs.db
+*.log
+
+# Netlify state and build artifacts
+.netlify/

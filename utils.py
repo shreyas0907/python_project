@@ -84,3 +84,19 @@ def export_csv_response(filename, headers, rows):
     response = Response(csv_data, mimetype='text/csv; charset=utf-8')
     response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+# Re-export business logic engines from business_logic for convenience
+from business_logic import (
+    FMCG_CATALOG,
+    FEFOEngine,
+    AttendanceEngine,
+    KhataEngine,
+    PayrollEngine,
+    FleetAnalyticsEngine,
+    DispatchEngine,
+    DamageClaimsEngine,
+    BackupEngine,
+    parse_date
+)
+
