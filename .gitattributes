@@ -3,19 +3,32 @@ tests/** linguist-detectable=true
 tests/** linguist-documentation=false
 scripts/** linguist-detectable=true
 
-# Vendor client-side JavaScript bundles and standalone SPA builds
+# Exclude JavaScript bundles and standalone SPA builds from language statistics
 *.js linguist-vendored
+*.js linguist-detectable=false
 **/*.js linguist-vendored
+**/*.js linguist-detectable=false
 index.html linguist-vendored
+index.html linguist-detectable=false
 netlify-deploy/** linguist-vendored
+netlify-deploy/** linguist-detectable=false
 static/js/** linguist-vendored
+static/js/** linguist-detectable=false
 
-# Vendor selected presentation templates
+# Exclude selected presentation templates
 templates/dashboard.html linguist-vendored
+templates/dashboard.html linguist-detectable=false
 templates/returns/index.html linguist-vendored
+templates/returns/index.html linguist-detectable=false
 templates/workers/view.html linguist-vendored
+templates/workers/view.html linguist-detectable=false
 templates/fuel/index.html linguist-vendored
+templates/fuel/index.html linguist-detectable=false
 templates/base.html linguist-vendored
+templates/base.html linguist-detectable=false
 templates/advances/index.html linguist-vendored
+templates/advances/index.html linguist-detectable=false
 templates/dispatches/index.html linguist-vendored
+templates/dispatches/index.html linguist-detectable=false
 templates/settlements/index.html linguist-vendored
+templates/settlements/index.html linguist-detectable=false
